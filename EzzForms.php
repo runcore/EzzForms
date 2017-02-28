@@ -192,14 +192,6 @@ abstract class FormField {
 
 }
 
-
-class FieldText extends FormField {
-    public function render($extra='') {
-        $this->value = isset($this->default)&&!empty($this->default)&&empty($this->value) ? $this->default : $this->value;
-        return '<input type="text" '.parent::renderAttributes($extra).' value="'. escape($this->value).'"/>'.parent::error();
-    }
-}
-
 class FieldSubmit extends FormField {
     public function render($extra='') {
         return '<input type="submit" '.parent::renderAttributes($extra).' value="'.escape($this->value).'"/>';
@@ -207,6 +199,55 @@ class FieldSubmit extends FormField {
 
     public function label($text) {
         return '';
+    }
+}
+
+class FieldText extends FormField {
+    public function render($extra='') {
+        //$this->value = isset($this->default)&&!empty($this->default)&&empty($this->value) ? $this->default : $this->value;
+        return '<input type="text" '.parent::renderAttributes($extra).' value="'. escape($this->value).'"/>';
+    }
+}
+
+class FieldTextarea extends FormField {
+    public function render($extra='') {
+        return '<textarea '.parent::renderAttributes($extra).' >'.escape($this->value).'</textarea>';
+    }
+}
+
+class FieldSelect extends FormField {
+    public $size = 1;
+    public $options = [];
+
+    public function __construct($id, Array $default = null, Array $options = null, $size=1) {
+        parent::__construct($id, $default, null);
+        if ( !is_array($this->value) ) {
+            $this->value = [ $this->value ];
+        }
+        $this->options = $options;
+        $this->size = $size;
+    }
+
+    public function render($extra='') {
+        if (!is_array($this->value)) {
+            $this->value = [$this->value];
+        }
+        $out = '<select '.$this->renderAttributes($extra).' size="'.$this->size.'"'.($this->size>1?' multiple="multiple"':'').'>';
+        if ( is_array($this->options) ) {
+            foreach ($this->options as $id => $data) {
+                if (is_array($data)) { // OPTGROUP
+                    $out .= '<optgroup label="' . $id . '">';
+                    foreach ($data as $kk => $vv) { // OPTION
+                        $out .= '<option value="' . $kk . '"' . (in_array($kk, $this->value) ? ' selected="selected"' : '') . '>' . escape($vv) . '</option>';
+                    }
+                    $out .= '</optgroup>';
+                } else { // OPTION
+                    $out .= '<option value="' . $id . '"' . (in_array($id, $this->value) ? ' selected="selected"' : '') . '>' . escape($data) . '</option>';
+                }
+            }//foreach
+        }
+        $out .= '</select>';
+        return $out;
     }
 }
 
