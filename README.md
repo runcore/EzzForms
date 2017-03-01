@@ -1,2 +1,2 @@
 # php-light-form
-Simple and powerfull embedded forms
+Simple and powerful forms for embedding
