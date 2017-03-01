@@ -97,12 +97,12 @@ abstract class Form {
         // is submit form?
         $this->isFormSubmit = !empty( $this->formMethod[$this->formId]['__ID__'] );
         if ( $this->isFormSubmit && $this->isCsrfProtectionEnabled ) {
-            $this->isFormSubmit = (
-                !empty( $_SESSION[$this->formTokenId] )
-                &&
-                ( $_SESSION[$this->formTokenId] == $this->formMethod[$this->formId]['__ID__'] )
-            );
-            unset( $_SESSION[$this->formTokenId] );
+            if ( !empty( $_SESSION[$this->formTokenId] ) ) {
+                if ( $_SESSION[$this->formTokenId] == $this->formMethod[$this->formId]['__ID__'] ) {
+                    $this->isFormSubmit = true;
+                }
+                unset( $_SESSION[$this->formTokenId] );
+            }
         }
     }
 
@@ -133,8 +133,10 @@ abstract class Form {
                 $field->setFormId( $this->getFormId() );
                 // Set value from GET|POST
                 if ( $this->isFormSubmit ) {
-                    if ( isset($this->formMethod[ $field->getId() ]) ) {
-                        $field->setValue($this->formMethod[$field->getId()]);
+                    if ( isset($this->formMethod[$this->formId][ $field->getId() ]) ) {
+                        $field->setValue( $this->formMethod[$this->formId][$field->getId()] );
+                    } else {
+                        $field->setValue( [] );
                     }
                 }
                 if ( $field->getFileUploadFlag() ) {
@@ -174,16 +176,28 @@ abstract class Form {
     public function render() {
         $out = '';
         $out .= $this->openTag();
+        $out .= '<table>';
+        $hiddens = [];
 
         /**
          * @var FormField $field
          */
         foreach($this->formFields as $field) {
+            if ($field instanceof FieldHidden) {
+                $hiddens[] = $field->render();
+                continue;
+            }
+            $out .= '<tr><td>';
             $out .= $field->label( $field->getName() );
+            $out .= '</td><td>';
             $out .= $field->render();
-            $out .= '<br />';
+            $out .= '</td><td>';
+//            $out .= $field->getError();
+            $out .= '</td></tr>';
         }//foreach
 
+        $out .= '</table>';
+        $out .= join(' ', $hiddens);
         $out .= $this->closeTag();
         return $out;
     }
@@ -193,6 +207,20 @@ abstract class Form {
      */
     public function isSubmit() {
         return $this->isFormSubmit;
+    }
+
+    /**
+     * @return array
+     */
+    public function getValues() {
+        $values = [];
+        foreach($this->formFields as $fieldId=>$field) {
+            $value = $field->getValue();
+            if ($value) {
+                $values[$fieldId] = $value;
+            }
+        }//foreach
+        return $values;
     }
 
     /**
@@ -256,7 +284,20 @@ abstract class FormField {
      */
     protected $formId = 'form';
 
+    /**
+     * @var bool
+     */
     protected $isFileUploadFlag = false;
+
+    /**
+     * @var bool
+     */
+    protected $isInputField = true;
+
+    /**
+     * @var bool
+     */
+    protected $isMultiValue = false;
 
     /**
      * FormField constructor.
@@ -297,14 +338,19 @@ abstract class FormField {
      * @param $value
      */
     public function setValue($value) {
-        $this->value = $value;
+        if ($this->isInputField) {
+            $this->fieldValue = $value;
+        }
     }
 
     /**
      * @return null
      */
     public function getValue() {
-        return $this->fieldValue;
+        if ($this->isInputField) {
+            return $this->fieldValue;
+        }
+        return null;
     }
 
     /**
@@ -343,7 +389,13 @@ abstract class FormField {
         $out = [];
         //$v = getParams($this->validator);
         if (!empty($this->fieldName)) {
-            $out[] = 'name="'.$this->formId.'['. $this->fieldName.']"';
+            if ($this->isMultiValue) {
+                $out[] = 'name="'.$this->formId.'['. $this->fieldName.'][]"';
+            } else {
+                $out[] = 'name="'.$this->formId.'['. $this->fieldName.']"';
+            }
+            //$out[] = 'name="'.$this->formId.'['. $this->fieldName.']"';
+            //$out[] = 'name="'.$this->getNameAttribute().'"';
         }
         if (!empty($this->fieldId)) {
             $out[] = 'id="'.$this->formId.'_'.$this->fieldId.'"';
@@ -360,6 +412,10 @@ abstract class FormField {
         return trim(join(' ',$out));
     }
 
+//    protected function _renderOption($k,$v,$extra) {
+//        return null;
+//    }
+
     /**
      *
      */
@@ -374,6 +430,8 @@ abstract class FormField {
  * @package EzzForms
  */
 class FieldSubmit extends FormField {
+    protected $isInputField = false;
+
     public function render($extra='') {
         return '<input type="submit" '.parent::renderAttributes($extra).' value="'.escape($this->fieldValue).'"/>'.PHP_EOL;
     }
@@ -394,6 +452,34 @@ class FieldText extends FormField {
 }
 
 /**
+ * Class FieldPassword
+ * @package EzzForms
+ */
+class FieldPassword extends FormField {
+    /**
+     * @param string $extra
+     * @return string
+     */
+    public function render($extra='') {
+        return '<input type="password" ' . parent::renderAttributes($extra) . ' value="' . escape($this->fieldValue) . '"/>';
+    }
+}
+
+/**
+ * Class FieldHidden
+ * @package EzzForms
+ */
+class FieldHidden extends FormField {
+    /**
+     * @param string $extra
+     * @return string
+     */
+    public function render($extra='') {
+        return '<input type="hidden" ' . parent::renderAttributes($extra) . ' value="' . escape($this->fieldValue) . '"/>';
+    }
+}
+
+/**
  * Class FieldTextarea
  * @package EzzForms
  */
@@ -408,21 +494,32 @@ class FieldTextarea extends FormField {
  * @package EzzForms
  */
 class FieldSelect extends FormField {
-    public $size = 1;
-    public $options = [];
 
+    protected $size = 1;
+    protected $options = [];
+    protected $isMultiValue = true;
+
+    /**
+     * FieldSelect constructor.
+     * @param $id
+     * @param array|null $default
+     * @param array|null $options
+     * @param int $size
+     */
     public function __construct($id, Array $default = null, Array $options = null, $size=1) {
         parent::__construct($id, $default, null);
-//        if ( !is_array($this->fieldValue) ) {
-//            $this->fieldValue = [ $this->fieldValue ];
-//        }
+
         $this->options = $options;
         $this->size = $size;
     }
 
+    /**
+     * @param string $extra
+     * @return string
+     */
     public function render($extra='') {
         if (!is_array($this->fieldValue)) {
-            $this->value = [$this->fieldValue];
+            $this->fieldValue = [$this->fieldValue];
         }
         $out = '<select '.$this->renderAttributes($extra).' size="'.$this->size.'"'.($this->size>1?' multiple="multiple"':'').'>'.PHP_EOL;
         if ( is_array($this->options) ) {
@@ -443,6 +540,97 @@ class FieldSelect extends FormField {
     }
 }
 
+
+abstract class FormFieldMulti extends FormField {
+    protected $separator = '<br />';
+    protected $options = [];
+    protected $isMultiValue = true;
+
+    /**
+     * FormFieldMulti constructor.
+     * @param $id
+     * @param array|null $default
+     * @param array|null $options
+     * @param int $size
+     */
+    public function __construct($id, Array $default = null, Array $options = null, $size=1) {
+        parent::__construct($id, $default, null);
+
+        $this->options = $options;
+    }
+
+    /**
+     * @param string $extra
+     * @return string
+     * @throws \Exception
+     */
+    public function render($extra='') {
+        if (empty($this->options)) {
+            throw new \Exception('Expected array of options');
+        }
+        $out = array();
+        foreach ($this->options as $k => $value) {
+            if (is_array($value)) {
+                $out[] = '<b>' . escape($k) . ':</b>';
+                foreach ($value as $id => $subValue) {
+                    $out[] = $this->_renderOption($id, $subValue, $extra);
+                }//foreach
+            } else {
+                $out[] = $this->_renderOption($k, $value, $extra);
+            }
+        }//foreach
+        return join($this->separator.PHP_EOL, $out);
+    }
+
+    protected abstract function _renderOption($id, $value, $extra);
+
+}
+
+/**
+ * Class FieldCheckbox
+ * @package EzzForms
+ */
+class FieldCheckbox extends FormFieldMulti {
+
+    /**
+     * @param $id
+     * @param $value
+     * @param $extra
+     * @return string
+     */
+    protected function _renderOption($id, $value, $extra) {
+        return '<label><input type="checkbox" ' . $this->renderAttributes($extra) . ' value="' . $id . '" '
+            . (in_array($id, $this->fieldValue) ? 'checked="checked"' : '') . '/>&nbsp;'
+            . escape($value).'</label>'.PHP_EOL;
+    }
+}
+
+
+/**
+ * Class FieldRadio
+ * @package EzzForms
+ */
+class FieldRadio extends FormFieldMulti {
+
+    /**
+     * @param $id
+     * @param $value
+     * @param $extra
+     * @return string
+     */
+    protected function _renderOption($id, $value, $extra) {
+        $fieldValue = is_array($this->fieldValue) ? $this->fieldValue[0] : $this->fieldValue;
+        return '<label><input type="radio" ' . $this->renderAttributes($extra) . ' value="' . $id . '" '
+            . ('' . $id === '' . $fieldValue ? 'checked="checked"' : '') . '/>' . escape($value) . '</label>';
+    }
+
+}
+
+
+/**
+ * Class FieldFile
+ * @package EzzForms
+ */
 class FieldFile extends FormField {
 
     protected $isFileUploadFlag = true;
@@ -462,7 +650,9 @@ class FieldFile extends FormField {
  * @param int $f
  */
 function pr($a, $f=0) {
-    echo '<pre>', print_r($a), '</pre>';
+    echo '<pre>';
+    print_r($a);
+    echo '</pre>';
     if ($f) exit;
 }
 
