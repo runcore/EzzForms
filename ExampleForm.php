@@ -6,6 +6,8 @@ use EzzForms as EF;
  */
 class ExampleForm extends EF\Form {
 
+    protected $isCsrfProtectionEnabled = false;
+
     public function __construct() {
 
         parent::__construct( 'exampleForm' );
@@ -24,6 +26,7 @@ class ExampleForm extends EF\Form {
         $this->add([
             new EF\FieldText( 'login', 'Default text', ['required','regexp'=>'^[a-zA-Z0-9_]+$'] ),
             new EF\FieldSelect('town', [14], $options['town'] ),
+            new EF\FieldFile('upload'),
             //
             new EF\FieldSubmit('', 'Logged In')
         ]);

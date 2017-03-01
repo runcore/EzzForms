@@ -10,7 +10,9 @@ if ($ef->isSubmit() && $ef->isValid()) {
     //
 }
 echo '<hr />';
-echo EF\escape( $ef->render() );
+$form = EF\escape( $ef->render() );
+$form = str_replace('><', ">\n<", $form);
+echo EF\pr($form);
 
 echo '<hr />';
 echo '<a href="./">Home</a>';
