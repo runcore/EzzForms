@@ -17,6 +17,7 @@ class ExampleForm extends EF\Form {
             'RU' => [
                 12=>'Moskow',
                 13=>'Piter',
+                15=>'Novosib',
             ],
             'US' => [
                 14=>'New York'
@@ -36,10 +37,10 @@ class ExampleForm extends EF\Form {
             new EF\FieldPassword('password', '',             ['required','regexp'=>'^[a-zA-Z0-9_]+$'] ),
             new EF\FieldTextarea('text3',    '',             [] ),
             new EF\FieldHidden(  'token2',   '2e2ee34r34r3', ['required'] ),
-            new EF\FieldSelect(  'town',     [14],           $options['town'],5 ),
-//            new EF\FieldFile(    'upload'),
-            new EF\FieldCheckbox('oss',      [232,456],      $options['oss'] ),
-            new EF\FieldRadio(   'oss2',     [232],          $options['oss'] ),
+            //new EF\FieldSelect(  'town',     [14],           $options['town'],5 ),
+            new EF\FieldFile(    'upload', 1024*1024*2 ),
+            //new EF\FieldCheckbox('oss',      [232,456],      $options['town'] ),
+            //new EF\FieldRadio(   'oss2',     [232],          $options['town'] ),
             //
             new EF\FieldSubmit('', 'Logged In')
         ]);

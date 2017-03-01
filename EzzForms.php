@@ -412,18 +412,110 @@ abstract class FormField {
         return trim(join(' ',$out));
     }
 
-//    protected function _renderOption($k,$v,$extra) {
-//        return null;
-//    }
-
     /**
      *
      */
     public function error() {
         // TODO:!
     }
-
 }
+
+/**
+ * Class FormFieldMulti
+ * @package EzzForms
+ */
+abstract class FormFieldMulti extends FormField {
+
+    protected $separator = '<br />';
+    protected $options = [];
+    protected $isMultiValue = true;
+
+    /**
+     * FormFieldMulti constructor.
+     * @param $id
+     * @param array|null $default
+     * @param array|null $options
+     * @param int $size
+     */
+    public function __construct($id, Array $default = null, Array $options = null, $size=1) {
+        parent::__construct($id, $default, null);
+
+        $this->options = $options;
+    }
+
+    /**
+     * @param $values
+     */
+    public function setValue($values) {
+        if (!is_array($values)) {
+            $values = [$values];
+        }
+        // Remove fake ID from input values (ie those that are not in $options array)
+        $validIds = [];
+        foreach($this->options as $k=>$v) {
+            if (is_array($v)) {
+                foreach ($v as $id => $subValue) {
+                    $validIds[] = $id;
+                }//foreach
+            } else {
+                $validIds[] = $k;
+            }
+        }
+        // get only valid IDs
+        $intersect = array_intersect($values, $validIds);
+
+        parent::setValue( $intersect );
+    }
+
+    /**
+     * @param string $extra
+     * @return string
+     * @throws \Exception
+     */
+    public function render($extra='') {
+        if (empty($this->options)) {
+            throw new \Exception('Expected array of options');
+        }
+        $out = array();
+        foreach ($this->options as $k => $value) {
+            if (is_array($value)) {
+                $out[] = '<b>' . escape($k) . ':</b>';
+                foreach ($value as $id => $subValue) {
+                    $out[] = $this->renderOption($id, $subValue, $extra);
+                }//foreach
+            } else {
+                $out[] = $this->renderOption($k, $value, $extra);
+            }
+        }//foreach
+        return join($this->separator.PHP_EOL, $out);
+    }
+
+    /**
+     * @param $id
+     * @param $value
+     * @param $extra
+     * @param $type
+     * @return string
+     */
+    protected function _renderOption($id, $value, $extra, $type) {
+        return sprintf('<label><input type="%s" value="%s" %s %s> %s</label>'.PHP_EOL
+            ,$type
+            ,$id
+            ,$this->renderAttributes($extra)
+            ,(in_array($id, $this->fieldValue) ? 'checked="checked"' : '')
+            ,escape($value)
+        );
+    }
+
+    /**
+     * @param $id
+     * @param $value
+     * @param $extra
+     * @return mixed
+     */
+    protected abstract function renderOption($id, $value, $extra);
+}
+
 
 /**
  * Class FieldSubmit
@@ -541,67 +633,19 @@ class FieldSelect extends FormField {
 }
 
 
-abstract class FormFieldMulti extends FormField {
-    protected $separator = '<br />';
-    protected $options = [];
-    protected $isMultiValue = true;
-
-    /**
-     * FormFieldMulti constructor.
-     * @param $id
-     * @param array|null $default
-     * @param array|null $options
-     * @param int $size
-     */
-    public function __construct($id, Array $default = null, Array $options = null, $size=1) {
-        parent::__construct($id, $default, null);
-
-        $this->options = $options;
-    }
-
-    /**
-     * @param string $extra
-     * @return string
-     * @throws \Exception
-     */
-    public function render($extra='') {
-        if (empty($this->options)) {
-            throw new \Exception('Expected array of options');
-        }
-        $out = array();
-        foreach ($this->options as $k => $value) {
-            if (is_array($value)) {
-                $out[] = '<b>' . escape($k) . ':</b>';
-                foreach ($value as $id => $subValue) {
-                    $out[] = $this->_renderOption($id, $subValue, $extra);
-                }//foreach
-            } else {
-                $out[] = $this->_renderOption($k, $value, $extra);
-            }
-        }//foreach
-        return join($this->separator.PHP_EOL, $out);
-    }
-
-    protected abstract function _renderOption($id, $value, $extra);
-
-}
-
 /**
  * Class FieldCheckbox
  * @package EzzForms
  */
 class FieldCheckbox extends FormFieldMulti {
-
     /**
      * @param $id
      * @param $value
      * @param $extra
      * @return string
      */
-    protected function _renderOption($id, $value, $extra) {
-        return '<label><input type="checkbox" ' . $this->renderAttributes($extra) . ' value="' . $id . '" '
-            . (in_array($id, $this->fieldValue) ? 'checked="checked"' : '') . '/>&nbsp;'
-            . escape($value).'</label>'.PHP_EOL;
+    protected function renderOption($id, $value, $extra) {
+        return parent::_renderOption($id, $value, $extra, 'checkbox');
     }
 }
 
@@ -611,19 +655,15 @@ class FieldCheckbox extends FormFieldMulti {
  * @package EzzForms
  */
 class FieldRadio extends FormFieldMulti {
-
     /**
      * @param $id
      * @param $value
      * @param $extra
      * @return string
      */
-    protected function _renderOption($id, $value, $extra) {
-        $fieldValue = is_array($this->fieldValue) ? $this->fieldValue[0] : $this->fieldValue;
-        return '<label><input type="radio" ' . $this->renderAttributes($extra) . ' value="' . $id . '" '
-            . ('' . $id === '' . $fieldValue ? 'checked="checked"' : '') . '/>' . escape($value) . '</label>';
+    protected function renderOption($id, $value, $extra) {
+        return parent::_renderOption($id, $value, $extra, 'radio');
     }
-
 }
 
 
@@ -633,10 +673,41 @@ class FieldRadio extends FormFieldMulti {
  */
 class FieldFile extends FormField {
 
+    /**
+     * @var bool
+     */
     protected $isFileUploadFlag = true;
 
+    /**
+     * max size of file, in Bytes
+     * @var int
+     */
+    protected $maxFileSize = (1024 * 1024) * 1;
+
+
+    public function __construct($id, $maxFileSize = null) {
+        parent::__construct($id, null, null);
+
+        if ( !empty($maxFileSize) && is_numeric($maxFileSize) ) {
+            $this->maxFileSize = $maxFileSize;
+        }
+    }
+
+    /**
+     * @param $text
+     * @return string
+     */
+    public function label($text) {
+        return '';
+    }
+
+    /**
+     * @param string $extra
+     * @return string
+     */
     public function render($extra='') {
-        return '<input type="file" ' . parent::renderAttributes($extra) . ' multiple="multiple" />';
+        return '<input type="file" ' . parent::renderAttributes($extra) . '/>'
+		.'<input type="hidden" name="MAX_FILE_SIZE" value="' . $this->maxFileSize . '"/>';
     }
 }
 
