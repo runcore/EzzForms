@@ -19,8 +19,16 @@ class ExampleForm extends EF\Form {
         ];
         // Add Fields
         $this->add([
-            new EF\FieldText(    'login',    'Default text*', ['required','minlen:3 maxlen:20 ','regexp'=>'^[a-zA-Z0-9_]+$'] ),
-            new EF\FieldPassword('password', '',             'required minlen:8 ' ),
+            new EF\FieldText(    'login',    '2', ['required'
+//                ,'regexp:/^[a-z_]+$/i'
+//                ,'minlen:3 maxlen:5 '
+                //,'int float'
+                //,'ipv4'
+                //,'datetime'
+            ]),
+            //new EF\FieldPassword('password', '',             'required minlen:8' ),
+            new EF\FieldText('password', '',             'required minlen:3' ),
+            new EF\FieldText('password2', '',            'equalto:password' ),
             //new EF\FieldTextarea('text3',    '',             [] ),
             //new EF\FieldHidden(  'token2',   '2e2ee34r34r3', ['required'] ),
             //new EF\FieldSelect(  'town',     [14],           $options['town'], 1 ),

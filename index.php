@@ -1,8 +1,7 @@
 ﻿<?php
 
-include('./EzzForms.php');
+include('./EzzForms/autoexec.php');
 include('./ExampleForm.php');
-
 
 use EzzForms as EF;
 
@@ -11,15 +10,15 @@ if ($ef->isSubmit() ) {
     if ($ef->isValid()) {
         $values = $ef->getValues();
         //
-        EF\pr($values);
+        //EF\pr($values);
     } else {
-        EF\pr('FORM IS INVALID');
+        //EF\pr('FORM IS INVALID');
     }
 }
 echo '<hr />';
 $form = EF\escape( $ef->render() );
 $form = str_replace('><', ">\n<", $form);
-echo EF\pr($form);
+EF\pr($form);
 
 echo '<hr />';
 echo '<a href="./">Home</a>';
