@@ -228,20 +228,118 @@ abstract class Form {
      */
     public function isValid() {
         $valid = true;
+        $this->validateErrors = [];
         foreach( $this->formFields as $fieldId=>$field ) {
-//            if (!$e->isValid()) {
-//                $valid = false;
-//            }
+            $errors = $field->validate();
+            if ( sizeo($errors)) {
+                $valid = false;
+                $this->validateErrors[$fieldId] = $errors;
+            }
         }
+        pr($this->validateErrors);
         return $valid;
     }
 
     public function getFormId() {
         return $this->formId;
     }
+}
 
+
+/**
+ * Class FieldValidator
+ * @package EzzForms
+ */
+class ServerFieldValidator {
+
+    public static $defaultRules = [
+        'require' 	=> 'Обязательное поле'
+        ,'minlen'	=> 'Длина поля от %s символов'
+        ,'maxlen'	=> 'Длина поля до %s символов'
+        ,'min'		=> 'Минимальное значение поля %s'
+        ,'max'		=> 'Максимальное значение поля %s'
+        ,'regex'	=> 'Некорректный формат поля'
+        ,'int'		=> 'Ожидается целое число'
+        ,'float'	=> 'Ожидается дробное число'
+        ,'decimal'	=> 'Ожидается сумма в денежном формате'
+        ,'ipv4'		=> 'Ожидается корректный IPV4 адрес'
+        ,'ipv6'		=> 'Ожидается корректный IPV6 адрес'
+        ,'url'		=> 'Ожидается корректный URL адрес'
+        ,'email'	=> 'Ожидается корректный Email адрес'
+        ,'time'     => 'Ожидается время в формате HH:MI:SS'
+        ,'date'     => 'Ожидается корректная дата в формате DD.MM.YYYY'
+        ,'datetime' => 'Ожидается корректная дата в формате DD.MM.YYYY HH:MI:SS'
+        ,'timedate' => 'Ожидается корректная дата в формате HH:MI:SS DD.MM.YYYY'
+        ,'equalto'	=> 'Значение отличается от поля %s'
+    ];
+
+    /**
+     * @var array
+     */
+    protected $rules = [];
+
+    /**
+     * ServerFieldValidator constructor.
+     * @param $rules
+     */
+    public function __construct( $rules ) {
+        if (!is_null($rules)) {
+            $this->parseRules($rules);
+        }
+    }
+
+    /**
+     * @param $rules example: 'rule rule:params' OR| ['rule0', 'rule1 rule2:params1', 'rule1'=>'params1']
+     */
+    protected function parseRules($rules) {
+        if (is_array($rules)) {
+            foreach($rules as $key=>$rule) {
+                if (is_numeric($key)) { // rule is string
+                    $this->parseRules($rule);
+                } else { // rule is array cell
+                    $this->rules[ trim($key) ] = trim($rule);
+                }
+            }//foreach
+        } else if (is_string($rules)) {
+            $rules = trim( preg_replace('/\s{2,}/',' ', strval($rules) ) ); // remove trash
+            foreach(explode(' ', $rules) as $rule) {
+                if ( strpos($rule,':')===false ) { // w/o value
+                    $this->rules[$rule] = true;
+                } else {
+                    list($ruleName, $ruleVal) = explode(':', $rule,2);
+                    if ( !empty($ruleName) && !empty($ruleVal) ) {
+                        $this->rules[trim($ruleName)] = trim($ruleVal);
+                    }
+                }
+            }//foreach
+        }
+    }
+
+    public function validate($fieldName, $fieldValue) {
+        // validate keys of available rules
+        if (sizeof($this->rules)>0) {
+            $diff = array_diff( array_keys($this->rules), array_keys(self::$defaultRules) );
+            if ( count($diff)>0 ) { // exists unknown rules!
+                foreach($diff as $v) {
+                    throw new Exception('Unknown rules: '.strtoupper($v).' for '.strtoupper($fieldName), 1 );
+//                    err(__CLASS__, 'Unknown rules: '.strtoupper($v).' for '.strtoupper($name) );
+                }//foreach
+            }
+        }
+
+    }
 
 }
+
+
+/**
+ * Class ClientFieldValidator
+ * @package EzzForms
+ */
+class ClientFieldValidator {
+
+}
+
 
 /**
  * Class FormField
@@ -270,9 +368,14 @@ abstract class FormField {
     protected $fieldDefaultValue;
 
     /**
-     * @var null
+     * @var ServerFieldValidator
      */
-    protected $fieldValidation;
+    protected $fieldValidator;
+
+    /**
+     * @var ClientFieldValidator
+     */
+    protected $clientFieldValidator;
 
     /**
      * @var string
@@ -309,8 +412,13 @@ abstract class FormField {
         $this->fieldId = $id;
         $this->fieldName = $id;
         $this->fieldDefaultValue = $default;
-        $this->fieldValue   = $default;
-        $this->fieldValidation = $validation;
+        $this->fieldValue = $default;
+        $this->fieldValidator = new ServerFieldValidator( $validation );
+//        $this->clientFieldValidator = new ClientFieldValidator( $validation );
+    }
+
+    public function validate() {
+
     }
 
     /**
@@ -682,7 +790,7 @@ class FieldFile extends FormField {
      * max size of file, in Bytes
      * @var int
      */
-    protected $maxFileSize = (1024 * 1024) * 1;
+    protected $maxFileSize = 2000000;
 
 
     public function __construct($id, $maxFileSize = null) {
