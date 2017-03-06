@@ -5,7 +5,8 @@ namespace EzzForms;
  * Class Form
  * @package EzzForms
  */
-abstract class Form {
+//abstract
+class Form {
 
     /**
      * @var string
@@ -76,7 +77,7 @@ abstract class Form {
      * @param string $action
      * @param string $methodName
      */
-    protected function __construct($name='', $action='', $methodName='post') {
+    public function __construct($name='', $action='', $methodName='post') {
         $this->formName	= $name ? $name : '';
         $this->formId	= $name ? $name : '';
         $this->formAction = $action ? $action : '';
@@ -142,6 +143,11 @@ abstract class Form {
         }
     }
 
+    public function fields(Array $fields) {
+        $this->add($fields);
+        return $this;
+    }
+
     /**
      * @param string $extra
      * @return string
@@ -167,7 +173,7 @@ abstract class Form {
      * @return string
      */
     public function render() {
-        $out = '';
+        $out = '<style>td.error{color:red;font-size:0.9em}</style>';
         $out .= $this->openTag();
         $out .= '<table>';
         $hiddens = [];
@@ -180,12 +186,13 @@ abstract class Form {
                 $hiddens[] = $field->render();
                 continue;
             }
+            $errors = $field->getErrors();
             $out .= '<tr><td>';
             $out .= $field->label( $field->getName() );
             $out .= '</td><td>';
             $out .= $field->render();
-            $out .= '</td><td>';
-//            $out .= $field->getError();
+            $out .= '</td><td class="error">';
+            $out .= (sizeof($errors)? join('<br />',$errors) :'' );
             $out .= '</td></tr>';
         }//foreach
 
@@ -222,19 +229,22 @@ abstract class Form {
     public function isValid() {
         $valid = true;
         $this->validateErrors = [];
+        $fieldsValues = $this->getValues();
         foreach( $this->formFields as $fieldId=>$field ) {
             /**
              * @var FormField $field
              */
-            $errors = $field->validate();
+            $errors = $field->validate( $fieldsValues );
             if ( sizeof($errors) ) {
                 $valid = false;
                 $this->validationErrors[$fieldId] = $errors;
             }
         }
-        pr($this->validationErrors);
+        //pr($this->validationErrors);
         return $valid;
     }
+
+
 
     public function getFormId() {
         return $this->formId;

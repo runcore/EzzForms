@@ -7,15 +7,17 @@ namespace EzzForms;
  */
 class FieldValidatorServer {
 
+    // todo: need add support of custom errors
+
     const RULE_NAME_REQUIRED = 'required';
     const RULE_NAME_MINLEN   = 'minlen';
     const RULE_NAME_MAXLEN   = 'maxlen';
     const RULE_NAME_MIN      = 'min';
     const RULE_NAME_MAX      = 'max';
     const RULE_NAME_REGEXP   = 'regexp';
-    const RULE_NAME_INT      = 'int'; // todo: add 'integer'
+    const RULE_NAME_INT      = 'int';
     const RULE_NAME_FLOAT    = 'float';
-    const RULE_NAME_DECIMAL  = 'decimal'; // todo: add 'money'
+    const RULE_NAME_DECIMAL  = 'decimal';
     const RULE_NAME_IPV4     = 'ipv4';
     const RULE_NAME_IPV6     = 'ipv6';
     const RULE_NAME_URL      = 'url';
@@ -73,6 +75,10 @@ class FieldValidatorServer {
         }
     }
 
+    public function getRules() {
+        return $this->rules;
+    }
+
     /**
      * @param $rules
      * @example 'rule rule:params' OR| ['rule0', 'rule1 rule2:params1', 'rule1'=>'params1']
@@ -108,10 +114,11 @@ class FieldValidatorServer {
     /**
      * @param $fieldName
      * @param $fieldValue
+     * @param $fieldsValues
      * @return array
      * @throws Exception
      */
-    public function validate($fieldName, $fieldValue) {
+    public function validate($fieldName, $fieldValue, $fieldsValues) {
         $errors = [];
         //pr($this->rules);
         // validate keys of available rules
@@ -131,7 +138,7 @@ class FieldValidatorServer {
                 throw new Exception('Unknown rule method : '.$methodName, 1 );
             }
 
-            $error = $this->$methodName( $fieldValue, $rule );
+            $error = $this->$methodName( $fieldValue, $rule, $fieldsValues );
             if (!empty($error)) {
                 $errors[$ruleName] = $error;
             }
@@ -140,100 +147,179 @@ class FieldValidatorServer {
         return $errors;
     }
 
-    protected function validate_required( $value, $rule ) {
+    /**
+     * @param $value
+     * @return mixed
+     */
+    protected function validate_required( $value ) {
         if ( !isset($value) || $value==='') {
             return self::$defaultRules[ self::RULE_NAME_REQUIRED ];
         }
+        return null;
     }
 
+    /**
+     * @param $value
+     * @param $rule
+     * @return string
+     */
     protected function validate_minlen( $value, $rule ) {
         $minlen = intval($rule);
         $fieldLen = mb_strlen( $value );
         if ( $minlen>0 && $fieldLen<$minlen ) {
             return sprintf(self::$defaultRules[ self::RULE_NAME_MINLEN ], $minlen);
         }
+        return null;
     }
 
+    /**
+     * @param $value
+     * @param $rule
+     * @return string
+     */
     protected function validate_maxlen( $value, $rule ) {
         $maxlen = intval($rule);
         $fieldLen = mb_strlen( $value );
         if ( $maxlen>0 && $fieldLen>$maxlen ) {
             return sprintf(self::$defaultRules[ self::RULE_NAME_MAXLEN ], $maxlen);
         }
+        return null;
     }
 
+    /**
+     * @param $value
+     * @param $rule
+     * @return string
+     */
     protected function validate_min( $value, $rule ) {
         $minVal   = intval($rule);
         $fieldVal = intval($value);
         if ( $minVal>0 && $fieldVal<$minVal ) {
             return sprintf(self::$defaultRules[ self::RULE_NAME_MIN ], $minVal);
         }
+        return null;
     }
 
+    /**
+     * @param $value
+     * @param $rule
+     * @return string
+     */
     protected function validate_max( $value, $rule ) {
         $maxVal = intval($rule);
         $value  = intval($value);
         if ( $maxVal>0 && $value>$maxVal ) {
             return sprintf(self::$defaultRules[ self::RULE_NAME_MAX ], $maxVal);
         }
+        return null;
     }
 
+    /**
+     * @param $value
+     * @param $rule
+     * @return mixed
+     */
     protected function validate_regexp( $value, $rule ) {
         if ( filter_var($value, FILTER_VALIDATE_REGEXP,['options'=>['regexp'=>$rule]] )===false )  {
             return self::$defaultRules[ self::RULE_NAME_REGEXP ];
         }
+        return null;
     }
 
-    protected function validate_int( $value, $rule ) {
+    /**
+     * @param $value
+     * @return mixed
+     */
+    protected function validate_int( $value ) {
         if ( filter_var($value, FILTER_VALIDATE_INT  )===false ) {
             return self::$defaultRules[ self::RULE_NAME_INT ];
         }
+        return null;
     }
 
-    protected function validate_float( $value, $rule ) {
+    /**
+     * @param $value
+     * @return mixed
+     */
+    protected function validate_float( $value ) {
         if ( filter_var($value, FILTER_VALIDATE_FLOAT)===false ) {
             return self::$defaultRules[ self::RULE_NAME_FLOAT ];
         }
+        return null;
     }
 
-    protected function validate_decimal( $value, $rule ) {
+    /**
+     * @param $value
+     * @return mixed
+     */
+    protected function validate_decimal( $value ) {
         if ( filter_var($value, FILTER_VALIDATE_FLOAT)===false
             || filter_var($value, FILTER_VALIDATE_REGEXP, ['options'=>['regexp'=>self::REGEXP_DECIMAL]] )===false
         ) {
             return self::$defaultRules[ self::RULE_NAME_DECIMAL ];
         }
+        return null;
     }
 
-    protected function validate_ipv4( $value, $rule ) {
+    /**
+     * @param $value
+     * @return mixed
+     */
+    protected function validate_ipv4( $value ) {
         if ( filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 )===false ) {
             return self::$defaultRules[ self::RULE_NAME_IPV4 ];
         }
+        return null;
     }
 
-    protected function validate_ipv6( $value, $rule ) {
+    /**
+     * @param $value
+     * @return mixed
+     */
+    protected function validate_ipv6( $value ) {
         if ( filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 )===false ) {
             return self::$defaultRules[ self::RULE_NAME_IPV6 ];
         }
+        return null;
     }
 
-    protected function validate_url( $value, $rule ) {
+    /**
+     * @param $value
+     * @return mixed
+     */
+    protected function validate_url( $value ) {
         if ( filter_var($value, FILTER_VALIDATE_URL  )===false ) {
             return self::$defaultRules[ self::RULE_NAME_URL ];
         }
+        return null;
     }
 
-    protected function validate_email( $value, $rule ) {
+    /**
+     * @param $value
+     * @return mixed|null
+     */
+    protected function validate_email( $value ) {
         if ( filter_var($value, FILTER_VALIDATE_EMAIL)===false ) {
             return self::$defaultRules[ self::RULE_NAME_EMAIL ];
         }
+        return null;
     }
 
-    protected function validate_time( $value, $rule ) {
+    /**
+     * @param $value
+     * @return mixed
+     */
+    protected function validate_time( $value ) {
         if ( filter_var($value, FILTER_VALIDATE_REGEXP,['options'=>['regexp'=>self::REGEXP_TIME]] )===false ) {
             return self::$defaultRules[ self::RULE_NAME_TIME ];
         }
+        return null;
     }
 
+    /**
+     * @param $value
+     * @return bool
+     */
     protected function _isValidDate($value) {
         // but need validate DATE part! (ex. 29.02.2001)
         $dt = trim(preg_replace('/\d+:\d+:\d+/','',$value)); // remove TIME
@@ -244,32 +330,57 @@ class FieldValidatorServer {
         return true;
     }
 
-    protected function validate_date( $value, $rule ) {
+    /**
+     * @param $value
+     * @return mixed|null|string
+     */
+    protected function validate_date( $value  ) {
         if ( filter_var($value, FILTER_VALIDATE_REGEXP,['options'=>['regexp'=>self::REGEXP_DATE]])===false ) {
             return self::$defaultRules[self::RULE_NAME_DATE];
         } else if ( !$this->_isValidDate($value) ) {
             return self::ERROR_DATE_INVALID;
         }
+        return null;
     }
 
-    protected function validate_datetime( $value, $rule ) {
+    /**
+     * @param $value
+     * @return mixed|null|string
+     */
+    protected function validate_datetime( $value ) {
         if ( filter_var($value, FILTER_VALIDATE_REGEXP,['options'=>['regexp'=>self::REGEXP_DATETIME]] )===false ) {
             return self::$defaultRules[ self::RULE_NAME_DATETIME ];
         } else if ( !$this->_isValidDate($value) ) {
             return self::ERROR_DATE_INVALID;
         }
+        return null;
     }
 
-    protected function validate_timedate( $value, $rule ) {
+    /**
+     * @param $value
+     * @return mixed|null|string
+     */
+    protected function validate_timedate( $value ) {
         if ( filter_var($value, FILTER_VALIDATE_REGEXP,['options'=>['regexp'=>self::REGEXP_TIMEDATE]] )===false ) {
             return self::$defaultRules[ self::RULE_NAME_TIMEDATE ];
         } else if ( !$this->_isValidDate($value) ) {
             return self::ERROR_DATE_INVALID;
         }
+        return null;
     }
 
-    protected function validate_equalto( $value, $rule ) {
-
+    /**
+     * @param $value
+     * @param $rule
+     * @param $fieldsValues
+     * @return null|string
+     */
+    protected function validate_equalto( $value, $rule, $fieldsValues ) {
+        //$equalFieldValue = isset($fieldsValues[$rule]) ? $fieldsValues[$rule] : '';
+        if ( !empty($value) && isset($fieldsValues[$rule]) && $value!=$fieldsValues[$rule] ) {
+            return sprintf( self::$defaultRules[ self::RULE_NAME_EQUALTO ], $rule );
+        }
+        return null;
     }
 
 }

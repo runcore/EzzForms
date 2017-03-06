@@ -22,6 +22,8 @@ abstract class FormField {
      */
     protected $fieldValue;
 
+    protected $options = [];
+
     /**
      * @var null
      */
@@ -62,6 +64,9 @@ abstract class FormField {
      */
     protected $isMultiValue = false;
 
+    protected $validationRules;
+    protected $errors;
+
     /**
      * FormField constructor.
      * @param $id
@@ -74,15 +79,24 @@ abstract class FormField {
         $this->fieldDefaultValue = $default;
         $this->fieldValue = $default;
         $this->fieldValidator = new FieldValidatorServer( $validation );
+        $this->validationRules = $this->fieldValidator->getRules();
 //        $this->clientFieldValidator = new FieldValidatorClient( $validation );
     }
 
     /**
-     *
+     * @param $fieldsValues
+     * @return array
      */
-    public function validate() {
-        $errors = $this->fieldValidator->validate( $this->getName(), $this->getValue() );
-        return $errors;
+    public function validate( $fieldsValues ) {
+        $this->errors = $this->fieldValidator->validate( $this->getName(), $this->getValue(), $fieldsValues );
+        return $this->errors;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getErrors() {
+        return $this->errors;
     }
 
     /**
@@ -100,7 +114,7 @@ abstract class FormField {
     }
 
     /**
-     * @param $formName
+     * @param $formId
      */
     public function setFormId($formId) {
         $this->formId = $formId;
@@ -132,6 +146,40 @@ abstract class FormField {
         return $this->fieldDefaultValue;
     }
 
+
+
+
+    /**
+     * @param $def
+     * @return $this
+     */
+    public function def($def) {
+        $this->fieldDefaultValue = $def;
+        return $this;
+    }
+
+    /**
+     * @param $validation
+     * @return $this
+     */
+    public function validation($validation) {
+        $this->fieldValidator = new FieldValidatorServer($validation);
+        return $this;
+    }
+
+    /**
+     * @param $options
+     * @return $this
+     */
+    public function options($options) {
+        $this->options = $options;
+        return $this;
+    }
+
+
+
+
+
     /**
      * @return bool
      */
@@ -144,7 +192,8 @@ abstract class FormField {
      * @return string
      */
     public function label($text) {
-        return '<label for="'.$this->getId().'">'.$text.'</label>';
+        $isRequired = isset($this->validationRules['required']);
+        return '<label for="'.$this->getId().'">'.$text.($isRequired?'<b>*</b>':'').'</label>';
     }
 
     /**
@@ -172,8 +221,8 @@ abstract class FormField {
         if (!empty($this->fieldId)) {
             $out[] = 'id="'.$this->formId.'_'.$this->fieldId.'"';
         }
-        if (isset($this->fieldValidation['maxlen'])) {
-            $out[] = 'maxlength="' . abs(intval($this->fieldValidation['maxlen'])) . '"';
+        if (isset($this->validationRules['maxlen'])) {
+            $out[] = 'maxlength="' . abs(intval($this->validationRules['maxlen'])) . '"';
         }
         if (!empty($this->extra)) {
             $out[] = $this->extra;
@@ -184,10 +233,4 @@ abstract class FormField {
         return trim(join(' ',$out));
     }
 
-    /**
-     *
-     */
-    public function error() {
-        // TODO:!
-    }
 }

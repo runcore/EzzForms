@@ -25,6 +25,11 @@ class FieldSelect extends FormField {
         $this->size = $size;
     }
 
+    public function size($size) {
+        $this->size = intval($size);
+        return $this;
+    }
+
     /**
      * @param string $extra
      * @return string

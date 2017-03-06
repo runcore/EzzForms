@@ -19,8 +19,8 @@ class ExampleForm extends EF\Form {
         ];
         // Add Fields
         $this->add([
-            new EF\FieldText(    'login',    '2', ['required'
-//                ,'regexp:/^[a-z_]+$/i'
+            new EF\FieldText('login',    '2', ['required'
+                ,'regexp:/^[a-z_]+$/i'
 //                ,'minlen:3 maxlen:5 '
                 //,'int float'
                 //,'ipv4'
@@ -28,7 +28,7 @@ class ExampleForm extends EF\Form {
             ]),
             //new EF\FieldPassword('password', '',             'required minlen:8' ),
             new EF\FieldText('password', '',             'required minlen:3' ),
-            new EF\FieldText('password2', '',            'equalto:password' ),
+            new EF\FieldText('password2', '',            'required equalto:password' ),
             //new EF\FieldTextarea('text3',    '',             [] ),
             //new EF\FieldHidden(  'token2',   '2e2ee34r34r3', ['required'] ),
             //new EF\FieldSelect(  'town',     [14],           $options['town'], 1 ),
@@ -39,4 +39,25 @@ class ExampleForm extends EF\Form {
             new EF\FieldSubmit('submit1', 'Logged In')
         ]);
     }
+}
+
+
+
+
+
+
+
+
+$towns=[123=>'Moskow',435=>'New York'];
+
+
+$form = EF\Ezz::form('exampleForm')
+    ->fields([
+         EF\Ezz::text('login')->def('2')->validation(['required'])
+        ,EF\Ezz::password('password')->validation('required minlen:3')
+        ,EF\Ezz::password('password2')->validation('required equalto:password')
+        ,EF\Ezz::select('town')->def([14])->options($towns)->size(1),
+    ]);
+if ($form->isSubmit() && $form->isValid() ) {
+    $values = $form->getValues();
 }
