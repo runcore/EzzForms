@@ -21,6 +21,9 @@ abstract class FormFieldMulti extends FormField {
     public function __construct($id, Array $default = null, Array $options = null, $size=1) {
         parent::__construct($id, $default, null);
 
+        $this->fieldDefaultValue = [];
+        $this->fieldValue = [];
+
         $this->options = $options;
     }
 

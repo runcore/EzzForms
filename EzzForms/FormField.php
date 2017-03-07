@@ -76,10 +76,12 @@ abstract class FormField {
     public function __construct($id, $default=null, $validation=null) {
         $this->fieldId = $id;
         $this->fieldName = $id;
-        $this->fieldDefaultValue = $default;
-        $this->fieldValue = $default;
-        $this->fieldValidator = new FieldValidatorServer( $validation );
-        $this->validationRules = $this->fieldValidator->getRules();
+
+        //$this->fieldDefaultValue = null;
+        //$this->fieldValue = null;
+
+        //$this->fieldValidator = new FieldValidatorServer( $validation );
+        //$this->validationRules = $this->fieldValidator->getRules();
 //        $this->clientFieldValidator = new FieldValidatorClient( $validation );
     }
 
@@ -88,7 +90,9 @@ abstract class FormField {
      * @return array
      */
     public function validate( $fieldsValues ) {
-        $this->errors = $this->fieldValidator->validate( $this->getName(), $this->getValue(), $fieldsValues );
+        if ( is_object( $this->fieldValidator ) ) {
+            $this->errors = $this->fieldValidator->validate($this->getName(), $this->getValue(), $fieldsValues);
+        }
         return $this->errors;
     }
 
@@ -155,6 +159,7 @@ abstract class FormField {
      */
     public function def($def) {
         $this->fieldDefaultValue = $def;
+        $this->fieldValue = $def;
         return $this;
     }
 
@@ -163,7 +168,9 @@ abstract class FormField {
      * @return $this
      */
     public function validation($validation) {
-        $this->fieldValidator = new FieldValidatorServer($validation);
+        $this->fieldValidator = new FieldValidatorServer( $validation );
+        $this->validationRules = $this->fieldValidator->getRules();
+//        $this->fieldValidator = new FieldValidatorServer($validation);
         return $this;
     }
 

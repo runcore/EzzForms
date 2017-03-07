@@ -19,6 +19,55 @@ spl_autoload_register(function ($class) {
 });
 
 
+// function of syntax sugar
+
+/**
+ * @param $formName
+ * @param null $action
+ * @param null $method
+ * @return Form
+ */
+function form($formName, $action=null, $method=null) {
+    return new Form($formName, $action, $method);
+}
+
+function text($name) {
+    return new FieldText($name);
+}
+
+function textarea($name) {
+    return new FieldTextarea($name);
+}
+
+function password($name) {
+    return new FieldPassword($name);
+}
+
+function select($name) {
+    return new FieldSelect($name);
+}
+
+function checkbox($name) {
+    return new FieldCheckbox($name,[],[]);
+}
+
+function radio($name) {
+    return new FieldRadio($name,[],[]);
+}
+
+function file($name) {
+    return new FieldFile($name);
+}
+
+function hidden($name) {
+    return new FieldHidden($name);
+}
+
+function submit($label) {
+    return new FieldSubmit('',$label);
+}
+
+
 /**
  * @param $a
  * @param int $f
@@ -38,3 +87,4 @@ function escape($s) {
     $s=trim($s);
     return ''==$s?'':htmlspecialchars($s, ENT_QUOTES);
 }
+
