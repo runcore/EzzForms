@@ -6,6 +6,10 @@ namespace EzzForms;
  * @package EzzForms
  */
 class FieldSubmit extends FormField {
+
+    /**
+     * @var bool
+     */
     protected $isInputField = false;
 
     /**
@@ -14,16 +18,20 @@ class FieldSubmit extends FormField {
      */
     public function __construct($id='',$default=null) {
         parent::__construct('', $default );
-        //$this->fieldId = $id;
-        //$this->fieldName = $id;
-        $this->fieldDefaultValue = $default;
-        $this->fieldValue = $default;
     }
 
+    /**
+     * @param string $extra
+     * @return string
+     */
     public function render($extra='') {
         return '<input type="submit" '.parent::renderAttributes($extra).' value="'.escape($this->fieldValue).'"/>'.PHP_EOL;
     }
 
+    /**
+     * @param $text
+     * @return string
+     */
     public function label($text) {
         return '';
     }

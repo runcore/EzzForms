@@ -7,8 +7,14 @@ namespace EzzForms;
  */
 abstract class FormFieldMulti extends FormField {
 
+    /**
+     * @var string
+     */
     protected $separator = '<br />';
-    protected $options = [];
+
+    /**
+     * @var bool
+     */
     protected $isMultiValue = true;
 
     /**
@@ -20,9 +26,6 @@ abstract class FormFieldMulti extends FormField {
      */
     public function __construct($id, Array $default = null, Array $options = null, $size=1) {
         parent::__construct($id, $default, null);
-
-        $this->fieldDefaultValue = [];
-        $this->fieldValue = [];
 
         $this->options = $options;
     }
@@ -36,15 +39,15 @@ abstract class FormFieldMulti extends FormField {
         }
         // Remove fake ID from input values (ie those that are not in $options array)
         $validIds = [];
-        foreach($this->options as $k=>$v) {
-            if (is_array($v)) {
-                foreach ($v as $id => $subValue) {
+        foreach($this->options as $k=>$option) {
+            if (is_array($option)) {
+                foreach($option as $id => $subValue) {
                     $validIds[] = $id;
                 }//foreach
             } else {
                 $validIds[] = $k;
             }
-        }
+        }//foreach
         // get only valid IDs
         $intersect = array_intersect($values, $validIds);
 
@@ -90,6 +93,8 @@ abstract class FormFieldMulti extends FormField {
             ,escape($value)
         );
     }
+
+    // ABSTRACT
 
     /**
      * @param $id

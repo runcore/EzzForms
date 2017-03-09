@@ -18,54 +18,88 @@ abstract class FormField {
     protected $fieldName  = '';
 
     /**
+     * Value of field
      * @var null
      */
     protected $fieldValue;
 
+    /**
+     * All available options of field
+     * @var array
+     */
     protected $options = [];
 
     /**
+     * Default value of field
      * @var null
      */
     protected $fieldDefaultValue;
 
     /**
+     * Server-side field validator
      * @var FieldValidatorServer
      */
     protected $fieldValidator;
 
     /**
+     * Client-side field validator
      * @var FieldValidatorClient
      */
     protected $clientFieldValidator;
 
     /**
+     * Extra attributes of field
      * @var string
      */
     protected $extra = '';
 
     /**
+     * Parent form ID. Used to encapsulate fields in a form
      * @var string
      */
     protected $formId = 'form';
 
-    /**
-     * @var bool
-     */
-    protected $isFileUploadFlag = false;
+    // FLAGS
 
     /**
+     * Field supports user input
      * @var bool
      */
     protected $isInputField = true;
 
     /**
+     * Field is a file type
+     * @var bool
+     */
+    protected $isFileField = false;
+
+    /**
+     * Field is a hidden type
+     * @var bool
+     */
+    protected $isHiddenField = false;
+
+    /**
+     * Field can contain several values
      * @var bool
      */
     protected $isMultiValue = false;
 
-    protected $validationRules;
-    protected $errors;
+    // VALIDATIONS
+
+    /**
+     * Validation rules of field
+     * @var array
+     */
+    protected $validationRules = [];
+
+    /**
+     * Validation errors of field
+     * @var array
+     */
+    protected $validationErrors = [];
+
+    // METHODS
 
     /**
      * FormField constructor.
@@ -73,34 +107,36 @@ abstract class FormField {
      * @param null $default
      * @param null $validation
      */
-    public function __construct($id, $default=null, $validation=null) {
+    public function __construct($id, $default=null, $rules=null) {
         $this->fieldId = $id;
         $this->fieldName = $id;
 
-        //$this->fieldDefaultValue = null;
-        //$this->fieldValue = null;
+        if ( !is_null($default) ) {
+            $this->fieldDefaultValue = $default;
+            $this->fieldValue = $default;
+        }
 
-        //$this->fieldValidator = new FieldValidatorServer( $validation );
-        //$this->validationRules = $this->fieldValidator->getRules();
-//        $this->clientFieldValidator = new FieldValidatorClient( $validation );
+        if ( !is_null($rules) ) {
+            $this->setValidationRules($rules);
+        }
     }
 
     /**
      * @param $fieldsValues
      * @return array
      */
-    public function validate( $fieldsValues ) {
+    public function validate( Array $fieldsValues ) {
         if ( is_object( $this->fieldValidator ) ) {
-            $this->errors = $this->fieldValidator->validate($this->getName(), $this->getValue(), $fieldsValues);
+            $this->validationErrors = $this->fieldValidator->validate($this->getName(), $this->getValue(), $fieldsValues);
         }
-        return $this->errors;
+        return $this->validationErrors;
     }
 
     /**
-     * @return mixed
+     * @return array
      */
-    public function getErrors() {
-        return $this->errors;
+    public function getValidationErrors() {
+        return $this->validationErrors;
     }
 
     /**
@@ -150,48 +186,34 @@ abstract class FormField {
         return $this->fieldDefaultValue;
     }
 
-
-
-
     /**
-     * @param $def
-     * @return $this
+     * @param $rules
      */
-    public function def($def) {
-        $this->fieldDefaultValue = $def;
-        $this->fieldValue = $def;
-        return $this;
-    }
-
-    /**
-     * @param $validation
-     * @return $this
-     */
-    public function validation($validation) {
-        $this->fieldValidator = new FieldValidatorServer( $validation );
+    protected function setValidationRules($rules) {
+        $this->fieldValidator = new FieldValidatorServer( $rules );
         $this->validationRules = $this->fieldValidator->getRules();
 //        $this->fieldValidator = new FieldValidatorServer($validation);
-        return $this;
     }
-
-    /**
-     * @param $options
-     * @return $this
-     */
-    public function options($options) {
-        $this->options = $options;
-        return $this;
-    }
-
-
-
-
 
     /**
      * @return bool
      */
-    public function getFileUploadFlag() {
-        return $this->isFileUploadFlag;
+    public function isInputField() {
+        return $this->isInputField;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isHiddenField() {
+        return $this->isHiddenField;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isFileField() {
+        return $this->isFileField;
     }
 
     /**
@@ -205,25 +227,16 @@ abstract class FormField {
 
     /**
      * @param string $extra
-     * @return mixed
-     */
-    abstract function render($extra='');
-
-    /**
-     * @param string $extra
      * @return array|string
      */
     protected function renderAttributes( $extra='' ) {
         $out = [];
-        //$v = getParams($this->validator);
         if (!empty($this->fieldName)) {
             if ($this->isMultiValue) {
                 $out[] = 'name="'.$this->formId.'['. $this->fieldName.'][]"';
             } else {
                 $out[] = 'name="'.$this->formId.'['. $this->fieldName.']"';
             }
-            //$out[] = 'name="'.$this->formId.'['. $this->fieldName.']"';
-            //$out[] = 'name="'.$this->getNameAttribute().'"';
         }
         if (!empty($this->fieldId)) {
             $out[] = 'id="'.$this->formId.'_'.$this->fieldId.'"';
@@ -237,7 +250,49 @@ abstract class FormField {
         if (!empty($extra)) {
             $out[] = $extra;
         }
+
         return trim(join(' ',$out));
     }
+
+    // PUBLIC SYNTAX SUGAR
+
+    /**
+     * Set rules of validation
+     * @param $rules
+     * @return $this
+     */
+    public function rules($rules) {
+        $this->setValidationRules($rules);
+        return $this;
+    }
+
+    /**
+     * Set options of field
+     * @param $options
+     * @return $this
+     */
+    public function options($options) {
+        $this->options = $options;
+        return $this;
+    }
+
+    /**
+     * Set default values of field
+     * @param $def
+     * @return $this
+     */
+    public function def($def) {
+        $this->fieldDefaultValue = $def;
+        $this->fieldValue = $def;
+        return $this;
+    }
+
+    // ABSTRACT
+
+    /**
+     * @param string $extra
+     * @return mixed
+     */
+    abstract function render($extra='');
 
 }

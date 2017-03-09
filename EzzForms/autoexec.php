@@ -13,13 +13,20 @@
  */
 namespace EzzForms;
 
+// todo: server, custom template engine
+// todo: client, support for jquery
+// todo: server, support ajax-request validation
+// todo: client, support for bootstrap 3
+// todo: client, support for angular
+// todo: client, support for client validation
+
 spl_autoload_register(function ($class) {
     $class = str_replace('_',DIRECTORY_SEPARATOR, $class);
     include $class . '.php';
 });
 
 
-// function of syntax sugar
+// SYNTAX SUGAR
 
 /**
  * @param $formName

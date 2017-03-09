@@ -7,8 +7,6 @@ namespace EzzForms;
  */
 class FieldValidatorServer {
 
-    // todo: need add support of custom errors
-
     const RULE_NAME_REQUIRED = 'required';
     const RULE_NAME_MINLEN   = 'minlen';
     const RULE_NAME_MAXLEN   = 'maxlen';
@@ -32,21 +30,21 @@ class FieldValidatorServer {
      * @var array
      */
     public static $defaultRules = [
-        self::RULE_NAME_REQUIRED => 'Обязательное поле'
-        ,self::RULE_NAME_MINLEN  => 'Длина поля от %d символов'
-        ,self::RULE_NAME_MAXLEN  => 'Длина поля до %d символов'
-        ,self::RULE_NAME_MIN     => 'Минимальное значение поля %s'
-        ,self::RULE_NAME_MAX     => 'Максимальное значение поля %s'
-        ,self::RULE_NAME_REGEXP  => 'Некорректный формат поля'
-        ,self::RULE_NAME_INT     => 'Ожидается целое число'
-        ,self::RULE_NAME_FLOAT   => 'Ожидается дробное число'
-        ,self::RULE_NAME_DECIMAL => 'Ожидается сумма в денежном формате'
-        ,self::RULE_NAME_IPV4    => 'Ожидается корректный IPv4 адрес'
-        ,self::RULE_NAME_IPV6    => 'Ожидается корректный IPv6 адрес'
-        ,self::RULE_NAME_URL     => 'Ожидается корректный URL адрес'
-        ,self::RULE_NAME_EMAIL   => 'Ожидается корректный Email адрес'
-        ,self::RULE_NAME_TIME    => 'Ожидается время в формате HH:MI:SS'
-        ,self::RULE_NAME_DATE    => 'Ожидается корректная дата в формате DD.MM.YYYY'
+        self::RULE_NAME_REQUIRED  => 'Обязательное поле'
+        ,self::RULE_NAME_MINLEN   => 'Длина поля от %d символов'
+        ,self::RULE_NAME_MAXLEN   => 'Длина поля до %d символов'
+        ,self::RULE_NAME_MIN      => 'Минимальное значение поля %s'
+        ,self::RULE_NAME_MAX      => 'Максимальное значение поля %s'
+        ,self::RULE_NAME_REGEXP   => 'Некорректный формат поля'
+        ,self::RULE_NAME_INT      => 'Ожидается целое число'
+        ,self::RULE_NAME_FLOAT    => 'Ожидается дробное число'
+        ,self::RULE_NAME_DECIMAL  => 'Ожидается сумма в денежном формате'
+        ,self::RULE_NAME_IPV4     => 'Ожидается корректный IPv4 адрес'
+        ,self::RULE_NAME_IPV6     => 'Ожидается корректный IPv6 адрес'
+        ,self::RULE_NAME_URL      => 'Ожидается корректный URL адрес'
+        ,self::RULE_NAME_EMAIL    => 'Ожидается корректный Email адрес'
+        ,self::RULE_NAME_TIME     => 'Ожидается время в формате HH:MI:SS'
+        ,self::RULE_NAME_DATE     => 'Ожидается корректная дата в формате DD.MM.YYYY'
         ,self::RULE_NAME_DATETIME => 'Ожидается корректная дата в формате DD.MM.YYYY HH:MI:SS'
         ,self::RULE_NAME_TIMEDATE => 'Ожидается корректная дата в формате HH:MI:SS DD.MM.YYYY'
         ,self::RULE_NAME_EQUALTO  => 'Значение отличается от поля %s'
@@ -61,9 +59,16 @@ class FieldValidatorServer {
     const REGEXP_TIMEDATE = "/^([0-1]\\d|2[0-3])(:[0-5]\\d){2} (?:(0[1-9]|[1-2]\\d|3[01])\\.(0[13-9]|1[012])|(0[1-9]|[1-2]\\d)\\.(02|1[0-2]))\\.((?:19|20)\\d\\d)$/";
 
     /**
+     * Field validation rules
      * @var array
      */
     protected $rules = [];
+
+    /**
+     * Field custom errors
+     * @var array
+     */
+    protected $customErrors = [];
 
     /**
      * ServerFieldValidator constructor.
@@ -80,8 +85,13 @@ class FieldValidatorServer {
     }
 
     /**
-     * @param $rules
-     * @example 'rule rule:params' OR| ['rule0', 'rule1 rule2:params1', 'rule1'=>'params1']
+     * Parse and normalization rules
+     * @param string|array $rules
+     * @example string rules: 'required minlen:3'
+     * @example array  rules: ['required minlen:3', 'regexp:^\d+$']
+     * @example array key-value: ['required','regexp'=>'/^\d+$/i' ]
+     * @example array with custom errors: ['required', 'regexp'=>['/\w+/i', 'Custom error text'] ]
+     * 'rule rule:params' OR| ['rule0', 'rule1 rule2:params1', 'rule1'=>'params1']
      */
     protected function parseRules($rules) {
         if (is_array($rules)) {
@@ -89,7 +99,16 @@ class FieldValidatorServer {
                 if (is_numeric($key)) { // rule is string
                     $this->parseRules($rule);
                 } else { // rule is array cell
-                    $this->rules[ trim($key) ] = trim($rule);
+                    $key = trim($key);
+                    if ( is_array($rule) ) {
+                        if (sizeof($rule)==2) { // With custom error
+                            list($rule,$customError) = $rule;
+                            $this->rules[$key] = trim($rule);
+                            $this->customErrors[$key] = $customError;
+                        }
+                    } else if (is_string($rule)) {
+                        $this->rules[$key] = trim($rule);
+                    }
                 }
             }//foreach
         } else if (is_string($rules)) {
@@ -120,7 +139,6 @@ class FieldValidatorServer {
      */
     public function validate($fieldName, $fieldValue, $fieldsValues) {
         $errors = [];
-        //pr($this->rules);
         // validate keys of available rules
         if (sizeof($this->rules)>0) {
             $diff = array_diff( array_keys($this->rules), array_keys(self::$defaultRules) );
@@ -140,7 +158,13 @@ class FieldValidatorServer {
 
             $error = $this->$methodName( $fieldValue, $rule, $fieldsValues );
             if (!empty($error)) {
-                $errors[$ruleName] = $error;
+                if (!empty($this->customErrors[$ruleName])) {
+                    // replace default error text to custom error text
+                    $errors[$ruleName] = $this->customErrors[$ruleName];
+                } else {
+                    // standard error text
+                    $errors[$ruleName] = $error;
+                }
             }
         }//foreach
 
@@ -376,7 +400,6 @@ class FieldValidatorServer {
      * @return null|string
      */
     protected function validate_equalto( $value, $rule, $fieldsValues ) {
-        //$equalFieldValue = isset($fieldsValues[$rule]) ? $fieldsValues[$rule] : '';
         if ( !empty($value) && isset($fieldsValues[$rule]) && $value!=$fieldsValues[$rule] ) {
             return sprintf( self::$defaultRules[ self::RULE_NAME_EQUALTO ], $rule );
         }

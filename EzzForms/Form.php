@@ -5,7 +5,6 @@ namespace EzzForms;
  * Class Form
  * @package EzzForms
  */
-//abstract
 class Form {
 
     /**
@@ -29,14 +28,36 @@ class Form {
     public $formMethodName	= 'POST';
 
     /**
+     * Array of GET,POST depending on the $this->formMethod
      * @var array
      */
     public $formMethod	= [];
 
     /**
-     * @var bool
+     * All form fields
+     * @var array
      */
-    protected $isFileUploadEnabled = false;
+    protected $formFields = [];
+
+    /**
+     * CSRF or Just form submit token
+     * @var string
+     */
+    protected $formToken;
+
+    /**
+     * Name of token field
+     * @var string
+     */
+    protected $formTokenId = '';
+
+    /**
+     * All validation errors grouped by field id
+     * @var array
+     */
+    protected $validationErrors = [];
+
+    // FLAGS -----------------------------------------------------------------------------------------------------------
 
     /**
      * @var bool
@@ -50,26 +71,10 @@ class Form {
     protected $isCsrfProtectionEnabled = true;
 
     /**
-     * Array with all form fields
-     * @var array
+     * @var bool
      */
-    protected $formFields = [];
+    protected $isFileUploadEnabled = false;
 
-    /**
-     * CSRF or just form submit token
-     * @var string
-     */
-    protected $formToken;
-
-    /**
-     * @var string
-     */
-    protected $formTokenId = '';
-
-    /**
-     * @var array
-     */
-    protected $validationErrors = [];
 
     /**
      * Form constructor.
@@ -77,25 +82,41 @@ class Form {
      * @param string $action
      * @param string $methodName
      */
-    public function __construct($name='', $action='', $methodName='post') {
+    public function __construct($name='', $action='', $methodName=null) {
         $this->formName	= $name ? $name : '';
         $this->formId	= $name ? $name : '';
-        $this->formAction = $action ? $action : '';
+        $this->setAction($action);
         // token
         $this->formToken = sha1(microtime(1));
         $this->formTokenId = $this->formId . '_ID';
         // method
-        $methodName = strtolower($methodName);
-        $this->formMethodName = in_array($methodName,['get','post']) ? $methodName : 'post';
-        $this->formMethod = $this->formMethodName=='post' ? $_POST : $_GET;
-        // is submit form?
-        $this->isFormSubmit = !empty( $this->formMethod[$this->formId]['__ID__'] );
-        if ( $this->isFormSubmit && $this->isCsrfProtectionEnabled ) {
-            if ( !empty( $_SESSION[$this->formTokenId] ) ) {
-                if ( $_SESSION[$this->formTokenId] == $this->formMethod[$this->formId]['__ID__'] ) {
-                    $this->isFormSubmit = true;
+        $this->setMethodName($methodName);
+    }
+
+    /**
+     * @param $action
+     */
+    protected function setAction($action) {
+        $this->formAction = $action ? $action : '';
+    }
+
+    /**
+     * @param $methodName
+     */
+    protected function setMethodName($methodName) {
+        if (!is_null($methodName)) {
+            $methodName = strtolower($methodName);
+            $this->formMethodName = in_array($methodName, ['get', 'post']) ? $methodName : 'post';
+            $this->formMethod = $this->formMethodName == 'post' ? $_POST : $_GET;
+            // is submit form?
+            $this->isFormSubmit = !empty($this->formMethod[$this->formId]['__ID__']);
+            if ($this->isFormSubmit && $this->isCsrfProtectionEnabled) {
+                if (!empty($_SESSION[$this->formTokenId])) {
+                    if ($_SESSION[$this->formTokenId] == $this->formMethod[$this->formId]['__ID__']) {
+                        $this->isFormSubmit = true;
+                    }
+                    unset($_SESSION[$this->formTokenId]);
                 }
-                unset( $_SESSION[$this->formTokenId] );
             }
         }
     }
@@ -133,7 +154,7 @@ class Form {
                         $field->setValue( [] );
                     }
                 }
-                if ( $field->getFileUploadFlag() ) {
+                if ( $field->isFileField() ) {
                     $this->isFileUploadEnabled = true;
                 }
                 $this->formFields[$field->getId()] = $field;
@@ -175,30 +196,44 @@ class Form {
     public function render() {
         $out = '<style>td.error{color:red;font-size:0.9em}</style>';
         $out .= $this->openTag();
+        $out .= $this->renderHiddenFields();
         $out .= '<table>';
-        $hiddens = [];
 
-        /**
-         * @var FormField $field
-         */
         foreach($this->formFields as $field) {
-            if ($field instanceof FieldHidden) {
-                $hiddens[] = $field->render();
+            /**
+             * @var FormField $field
+             */
+            if ( $field->isHiddenField() ) {
                 continue;
             }
-            $errors = $field->getErrors();
-            $out .= '<tr><td>';
-            $out .= $field->label( $field->getName() );
-            $out .= '</td><td>';
-            $out .= $field->render();
-            $out .= '</td><td class="error">';
-            $out .= (sizeof($errors)? join('<br />',$errors) :'' );
-            $out .= '</td></tr>';
+            $errors = $field->getValidationErrors();
+            $out .= '<tr>'
+                .'<td>' . $field->label( $field->getName() ) . '</td>'
+                .'<td>' . $field->render() . '</td>'
+                .'<td class="error">' . (sizeof($errors)? join('<br />',$errors) :'' ) . '</td>'
+                .'</tr>'
+            ;
+        }//foreach
+        $out .= '</table>';
+        $out .= $this->closeTag();
+
+        return $out;
+    }
+
+    /**
+     * @return string
+     */
+    public function renderHiddenFields() {
+        $out = '';
+        foreach($this->formFields as $field) {
+            /**
+             * @var FormField $field
+             */
+            if ( $field->isHiddenField() ) {
+                $out .= $field->render();
+            }
         }//foreach
 
-        $out .= '</table>';
-        $out .= join(' ', $hiddens);
-        $out .= $this->closeTag();
         return $out;
     }
 
@@ -214,12 +249,16 @@ class Form {
      */
     public function getValues() {
         $values = [];
-        foreach($this->formFields as $fieldId=>$field) {
-            $value = $field->getValue();
+        foreach($this->formFields as $fieldId=>$fieldObj) {
+            /**
+             * @var FormField $fieldObj
+             */
+            $value = $fieldObj->getValue();
             if ($value) {
                 $values[$fieldId] = $value;
             }
         }//foreach
+
         return $values;
     }
 
@@ -228,25 +267,39 @@ class Form {
      */
     public function isValid() {
         $valid = true;
-        $this->validateErrors = [];
+        $this->validationErrors = [];
         $fieldsValues = $this->getValues();
-        foreach( $this->formFields as $fieldId=>$field ) {
+        foreach( $this->formFields as $fieldId=>$fieldObj ) {
             /**
-             * @var FormField $field
+             * @var FormField $fieldObj
              */
-            $errors = $field->validate( $fieldsValues );
+            $errors = $fieldObj->validate( $fieldsValues );
             if ( sizeof($errors) ) {
                 $valid = false;
                 $this->validationErrors[$fieldId] = $errors;
             }
-        }
-        //pr($this->validationErrors);
+        }//foreach
+
         return $valid;
     }
 
-
-
+    /**
+     * @return string
+     */
     public function getFormId() {
         return $this->formId;
     }
+
+    // SYNTAX SUGAR
+
+    public function method($methodName) {
+        $this->setMethodName($methodName);
+        return $this;
+    }
+
+    public function action($action) {
+        $this->setAction($action);
+        return $this;
+    }
+
 }
