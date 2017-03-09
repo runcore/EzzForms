@@ -187,17 +187,20 @@ class Form {
         $inline = ' name="'.$this->formName.'" id="'.$this->formId.'" action="'.$this->formAction.'" method="'.$this->formMethodName.'"';
         $inline .= $this->isFileUploadEnabled ? ' enctype="multipart/form-data"' : '';
         $inline .= !empty($extra) ? ' '.trim($extra) : '';
+        $hiddens = $this->renderHiddenFields();
         //
         return '<form '.trim($inline).'>'.PHP_EOL
-            .'<input type="hidden" name="'.$this->formName.'[__ID__]" value="'.$this->formToken.'"/>'.PHP_EOL;
+            .'<input type="hidden" name="'.$this->formName.'[__ID__]" value="'.$this->formToken.'"/>'.PHP_EOL
+            .$hiddens
+        ;
     }
 
     /**
      * @param string $comment
      * @return string
      */
-    public function closeTag($comment='') {
-        return $comment.'</form>';
+    public function closeTag() {
+        return '</form>';
     }
 
     /**
@@ -214,14 +217,56 @@ class Form {
      *
      */
     protected function renderTemplate() {
-        if (is_null($this->view)) {
-            $this->view = new View();
-        }
-        $this->view->setTemplate( $this->templateFileName );
-        $this->view->setForm('form', $this );
-        $this->view->set('fields', $this->formFields );
+        //if (is_null($this->view)) {
+            //$this->view = new View();
+        //}
+        //$this->view->setTemplate( $this->templateFileName );
+        //$this->view->setForm('form', $this );
+        //$this->view->set('fields', $this->formFields );
 
-        return $this->view->fetch();
+        $_ENV['fields'] = $this->formFields;
+
+        $html = file_get_contents( $this->templateFileName );
+        //
+        $pattern = "/\{(?P<part>[^\:]+)(\:(?P<name>[^\: \}]+))?(\:\"(?P<title>[^\"]+)\")?(?P<extra>[^\}]+)?\}/";
+        $html = preg_replace_callback($pattern, function($matches){
+            $out = '';
+            $part  = !empty($matches['part'])  ? $matches['part']  : '';
+            $name  = !empty($matches['name'])  ? $matches['name']  : '';
+            $title = !empty($matches['title']) ? $matches['title'] : '';
+            $extra = !empty($matches['extra']) ? $matches['extra'] : '';
+            //pr([$part,$name,$title,$extra]);
+
+            // Fields
+            $fields = $_ENV['fields'];
+            //pr($fields);
+            if (!empty($name) && isset($fields[$name])) {
+                $field = $fields[$name];
+
+                /**
+                 * @var FormField $field
+                 */
+                if ($part=='label') {
+                    $out .= $field->label($title, $extra);
+                } else if ($part=='field') {
+                    //pr([$part,$name,$title,$extra]);
+                    $out .= $field->render($extra);
+                } else if ($part=='error') {
+                    $out .= $field->errors($extra);
+                }
+            } else {
+                // Form
+                if ($part == 'formOpen') {
+                    $out .= $this->openTag($extra);
+                } else if ($part == 'formClose') {
+                    $out .= $this->closeTag();
+                }
+            }
+            return $out;
+        }, $html);
+
+        return $html;
+
     }
 
     /**
@@ -230,7 +275,7 @@ class Form {
     public function renderDefault() {
         $out = '<style>td.error{color:red;font-size:0.9em}</style>';
         $out .= $this->openTag();
-        $out .= $this->renderHiddenFields();
+        //$out .= $this->renderHiddenFields();
         $out .= '<table>';
 
         foreach($this->formFields as $field) {
@@ -264,7 +309,7 @@ class Form {
              * @var FormField $field
              */
             if ( $field->isHiddenField() ) {
-                $out .= $field->render();
+                $out .= $field->render().PHP_EOL;
             }
         }//foreach
 

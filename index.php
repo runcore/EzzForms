@@ -3,7 +3,7 @@ use EzzForms as Ezz;
 include('./EzzForms/autoexec.php');
 
 // Options
-$towns = ['Towns'=>[123=>'Moskow','NY'=>'New York']];
+$towns = ['Столицы'=>[123=>'Moskow','WA'=>'Washington']];
 
 // Form
 $form = Ezz\form('exampleForm')
@@ -13,13 +13,13 @@ $form = Ezz\form('exampleForm')
         Ezz\text('login')->def('%')->rules(['required minlen:3','regexp'=>['/^[\w]+$/i','Некорректный логин'] ])
         ,Ezz\password('password')->rules('required minlen:8')
         ,Ezz\password('password2')->rules(['required','equalto'=>['password','Пароли несовпадают'] ])
-        ,Ezz\select('town')->def([14])->options($towns)->size(1)
+        ,Ezz\select('towns')->def([14])->options($towns)->size(1)
         ,Ezz\checkbox('towns2')->def(['NY'])->options($towns)
         ,Ezz\radio('towns3')->options($towns)
-        ,Ezz\textarea('text')
+        ,Ezz\textarea('text')->rules('required')
 //      ,Ezz\file('file2')
         ,Ezz\hidden('token')->def(md5(microtime(1)))
-        ,Ezz\submit('Отправить')
+        ,Ezz\submit('submit1')
     ])
     ->template('./form.template.php');
 
@@ -32,6 +32,8 @@ if ( $form->isSubmit() ) {
 }
 
 $formHtml = $form->render();
+echo $formHtml;
+exit;
 
 // Form code
 $html = str_replace('><', ">\n<", Ezz\escape( $formHtml ) );

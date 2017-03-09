@@ -139,9 +139,9 @@ abstract class FormField {
         return $this->validationErrors;
     }
 
-    public function errors() {
+    public function errors($extra='') {
         $errors = $this->getValidationErrors();
-        return (sizeof($errors)? join('<br />',$errors) :'' );
+        return '<p '.$extra.'>'.(sizeof($errors)? join('<br />',$errors) :'' ).'</p>';
     }
 
     /**
@@ -225,9 +225,9 @@ abstract class FormField {
      * @param $text
      * @return string
      */
-    public function label($text) {
+    public function label($text, $extra='') {
         $isRequired = isset($this->validationRules['required']);
-        return '<label for="'.$this->getId().'">'.$text.($isRequired?'<b>*</b>':'').'</label>';
+        return '<label for="'.$this->getId().'" '.(!empty($extra)?$extra:'').'>'.$text.($isRequired?'<b>*</b>':'').'</label>';
     }
 
     /**
@@ -298,6 +298,6 @@ abstract class FormField {
      * @param string $extra
      * @return mixed
      */
-    abstract function render($extra='');
+    abstract public function render($extra='');
 
 }

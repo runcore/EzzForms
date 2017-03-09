@@ -71,8 +71,8 @@ function hidden($name) {
     return new FieldHidden($name);
 }
 
-function submit($label) {
-    return new FieldSubmit('',$label);
+function submit($name,$label='') {
+    return new FieldSubmit($name,$label);
 }
 
 /**
