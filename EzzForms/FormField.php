@@ -139,6 +139,11 @@ abstract class FormField {
         return $this->validationErrors;
     }
 
+    public function errors() {
+        $errors = $this->getValidationErrors();
+        return (sizeof($errors)? join('<br />',$errors) :'' );
+    }
+
     /**
      * @return string
      */

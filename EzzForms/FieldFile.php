@@ -10,7 +10,7 @@ class FieldFile extends FormField {
     /**
      * @var bool
      */
-    protected $isFileUploadFlag = true;
+    protected $isFileField = true;
 
     /**
      * max size of file, in Bytes
@@ -43,4 +43,7 @@ class FieldFile extends FormField {
         return '<input type="file" ' . parent::renderAttributes($extra) . '/>'
 		.'<input type="hidden" name="MAX_FILE_SIZE" value="' . $this->maxFileSize . '"/>';
     }
+
+    // todo: need extend file field. processing, control size,file types, upload errors ...
+
 }

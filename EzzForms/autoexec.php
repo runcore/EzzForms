@@ -6,6 +6,7 @@
  *  CSRF protection
  *  Default values for fields
  *  Validation of values
+ *  Custom validation error texts
  *
  * @package EzzForms
  * @created 01.01.2017
@@ -74,7 +75,6 @@ function submit($label) {
     return new FieldSubmit('',$label);
 }
 
-
 /**
  * @param $a
  * @param int $f
@@ -95,3 +95,6 @@ function escape($s) {
     return ''==$s?'':htmlspecialchars($s, ENT_QUOTES);
 }
 
+function array_escape($a) {
+    return is_array($a) ? array_map(__FUNCTION__, $a): (is_string($a) ? escape($a) : $a);
+}

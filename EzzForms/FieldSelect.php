@@ -18,7 +18,7 @@ class FieldSelect extends FormField {
      * @param array|null $options
      * @param int $size
      */
-    public function __construct($id, Array $default = null, Array $options = null, $size=1) {
+    public function __construct($id, Array $default = null, Array $options = [], $size=1) {
         parent::__construct($id, $default, null);
 
         $this->options = $options;

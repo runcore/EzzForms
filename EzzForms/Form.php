@@ -57,6 +57,16 @@ class Form {
      */
     protected $validationErrors = [];
 
+    /**
+     * @var string
+     */
+    protected $templateFileName = '';
+
+    /**
+     * @var View $view
+     */
+    protected $view;
+
     // FLAGS -----------------------------------------------------------------------------------------------------------
 
     /**
@@ -194,6 +204,30 @@ class Form {
      * @return string
      */
     public function render() {
+        if ( !empty($this->templateFileName) && is_file($this->templateFileName) ) {
+            return $this->renderTemplate();
+        }
+        return $this->renderDefault();
+    }
+
+    /**
+     *
+     */
+    protected function renderTemplate() {
+        if (is_null($this->view)) {
+            $this->view = new View();
+        }
+        $this->view->setTemplate( $this->templateFileName );
+        $this->view->setForm('form', $this );
+        $this->view->set('fields', $this->formFields );
+
+        return $this->view->fetch();
+    }
+
+    /**
+     * @return string
+     */
+    public function renderDefault() {
         $out = '<style>td.error{color:red;font-size:0.9em}</style>';
         $out .= $this->openTag();
         $out .= $this->renderHiddenFields();
@@ -284,6 +318,21 @@ class Form {
     }
 
     /**
+     * @param $templateFileName
+     * @throws Exception
+     */
+    protected function setTemplate($templateFileName) {
+        if (empty($templateFileName) || !is_file($templateFileName)) {
+            throw new Exception('Invalid template filename '.$templateFileName );
+        }
+        // Template file is OK
+        $this->templateFileName = $templateFileName;
+        if (is_null($this->view)) {
+            $this->view = new View();
+        }
+    }
+
+    /**
      * @return string
      */
     public function getFormId() {
@@ -299,6 +348,11 @@ class Form {
 
     public function action($action) {
         $this->setAction($action);
+        return $this;
+    }
+
+    public function template($templateFileName) {
+        $this->setTemplate($templateFileName);
         return $this;
     }
 
