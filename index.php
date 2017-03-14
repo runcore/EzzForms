@@ -21,7 +21,9 @@ $form = Ezz\form('exampleForm')
         ,Ezz\hidden('token')->def(md5(microtime(1)))
         ,Ezz\submit('submit1')
     ])
-    ->template('./form.template.php');
+//    ->bootstrap(true)->template('./form.bootstrap.php')
+    ->template('./form.template.php')
+;
 
 // Processing ...
 if ( $form->isSubmit() ) {
@@ -33,6 +35,7 @@ if ( $form->isSubmit() ) {
 
 $formHtml = $form->render();
 echo $formHtml;
+
 exit;
 
 // Form code

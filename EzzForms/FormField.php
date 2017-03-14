@@ -30,6 +30,12 @@ abstract class FormField {
     protected $options = [];
 
     /**
+     * Simple array of values, without optgroup
+     * @var array
+     */
+    protected $optionsAsSimpleArray = [];
+
+    /**
      * Default value of field
      * @var null
      */
@@ -191,6 +197,21 @@ abstract class FormField {
         return $this->fieldDefaultValue;
     }
 
+    protected function setOptions( $options ) {
+        $this->options = $options;
+        //
+        $this->optionsAsSimpleArray = [];
+        foreach($this->options as $k=>$option) {
+            if (is_array($option)) {
+                foreach($option as $id => $subValue) {
+                    $this->optionsAsSimpleArray[] = $id;
+                }//foreach
+            } else {
+                $this->optionsAsSimpleArray[] = $k;
+            }
+        }//foreach
+    }
+
     /**
      * @param $rules
      */
@@ -277,7 +298,7 @@ abstract class FormField {
      * @return $this
      */
     public function options($options) {
-        $this->options = $options;
+        $this->setOptions( $options );
         return $this;
     }
 

@@ -5,7 +5,8 @@ namespace EzzForms;
  * Class Form
  * @package EzzForms
  */
-class Form {
+class Form
+{
 
     /**
      * @var string
@@ -20,18 +21,18 @@ class Form {
     /**
      * @var string
      */
-    public $formAction	= '';
+    public $formAction = '';
 
     /**
      * @var string
      */
-    public $formMethodName	= 'POST';
+    public $formMethodName = 'POST';
 
     /**
      * Array of GET,POST depending on the $this->formMethod
      * @var array
      */
-    public $formMethod	= [];
+    public $formMethod = [];
 
     /**
      * All form fields
@@ -85,6 +86,11 @@ class Form {
      */
     protected $isFileUploadEnabled = false;
 
+    /**
+     * @var bool
+     */
+    protected $isBootstrapEnabled = false;
+
 
     /**
      * Form constructor.
@@ -92,9 +98,10 @@ class Form {
      * @param string $action
      * @param string $methodName
      */
-    public function __construct($name='', $action='', $methodName=null) {
-        $this->formName	= $name ? $name : '';
-        $this->formId	= $name ? $name : '';
+    public function __construct($name = '', $action = '', $methodName = null)
+    {
+        $this->formName = $name ? $name : '';
+        $this->formId = $name ? $name : '';
         $this->setAction($action);
         // token
         $this->formToken = sha1(microtime(1));
@@ -106,14 +113,16 @@ class Form {
     /**
      * @param $action
      */
-    protected function setAction($action) {
+    protected function setAction($action)
+    {
         $this->formAction = $action ? $action : '';
     }
 
     /**
      * @param $methodName
      */
-    protected function setMethodName($methodName) {
+    protected function setMethodName($methodName)
+    {
         if (!is_null($methodName)) {
             $methodName = strtolower($methodName);
             $this->formMethodName = in_array($methodName, ['get', 'post']) ? $methodName : 'post';
@@ -134,9 +143,10 @@ class Form {
     /**
      *
      */
-    public function __destruct() {
-        if ( $this->isCsrfProtectionEnabled ) {
-            $_SESSION[ $this->formTokenId ] = $this->formToken;
+    public function __destruct()
+    {
+        if ($this->isCsrfProtectionEnabled) {
+            $_SESSION[$this->formTokenId] = $this->formToken;
         }
     }
 
@@ -146,25 +156,26 @@ class Form {
      * @param array|FormField $params
      * @throws \Exception
      */
-    public function add( $params ) {
-        if ( is_array($params) ) {
-            foreach($params as $field) {
-                $this->add( $field );
+    public function add($params)
+    {
+        if (is_array($params)) {
+            foreach ($params as $field) {
+                $this->add($field);
             }//foreach
         } else {
             // Add one field
-            if ( $params instanceof FormField ) {
+            if ($params instanceof FormField) {
                 $field = $params;
-                $field->setFormId( $this->getFormId() );
+                $field->setFormId($this->getFormId());
                 // Set value from GET|POST
-                if ( $this->isFormSubmit ) {
-                    if ( isset($this->formMethod[$this->formId][ $field->getId() ]) ) {
-                        $field->setValue( $this->formMethod[$this->formId][$field->getId()] );
+                if ($this->isFormSubmit) {
+                    if (isset($this->formMethod[$this->formId][$field->getId()])) {
+                        $field->setValue($this->formMethod[$this->formId][$field->getId()]);
                     } else {
-                        $field->setValue( [] );
+                        $field->setValue([]);
                     }
                 }
-                if ( $field->isFileField() ) {
+                if ($field->isFileField()) {
                     $this->isFileUploadEnabled = true;
                 }
                 $this->formFields[$field->getId()] = $field;
@@ -174,7 +185,8 @@ class Form {
         }
     }
 
-    public function fields(Array $fields) {
+    public function fields(Array $fields)
+    {
         $this->add($fields);
         return $this;
     }
@@ -183,32 +195,38 @@ class Form {
      * @param string $extra
      * @return string
      */
-    public function openTag($extra='') {
-        $inline = ' name="'.$this->formName.'" id="'.$this->formId.'" action="'.$this->formAction.'" method="'.$this->formMethodName.'"';
+    public function openTag($extra = '')
+    {
+        $inline = ' name="' . $this->formName . '" id="' . $this->formId . '" action="' . $this->formAction . '" method="' . $this->formMethodName . '"';
         $inline .= $this->isFileUploadEnabled ? ' enctype="multipart/form-data"' : '';
-        $inline .= !empty($extra) ? ' '.trim($extra) : '';
-        $hiddens = $this->renderHiddenFields();
+        $inline .= !empty($extra) ? ' ' . trim($extra) : '';
+        $hiddenFieldsHtml = $this->renderHiddenFields();
         //
-        return '<form '.trim($inline).'>'.PHP_EOL
-            .'<input type="hidden" name="'.$this->formName.'[__ID__]" value="'.$this->formToken.'"/>'.PHP_EOL
-            .$hiddens
-        ;
+        return '<form ' . trim($inline) . '>' . PHP_EOL
+            . '<input type="hidden" name="' . $this->formName . '[__ID__]" value="' . $this->formToken . '"/>' . PHP_EOL
+            . $hiddenFieldsHtml;
     }
 
     /**
      * @param string $comment
      * @return string
      */
-    public function closeTag() {
+    public function closeTag()
+    {
         return '</form>';
     }
 
     /**
      * @return string
      */
-    public function render() {
-        if ( !empty($this->templateFileName) && is_file($this->templateFileName) ) {
-            return $this->renderTemplate();
+    public function render()
+    {
+        if (!empty($this->templateFileName) && is_file($this->templateFileName)) {
+            if ($this->isBootstrapEnabled) {
+                return $this->renderTemplateBootstrap();
+            } else {
+                return $this->renderTemplate();
+            }
         }
         return $this->renderDefault();
     }
@@ -216,42 +234,33 @@ class Form {
     /**
      *
      */
-    protected function renderTemplate() {
-        //if (is_null($this->view)) {
-            //$this->view = new View();
-        //}
-        //$this->view->setTemplate( $this->templateFileName );
-        //$this->view->setForm('form', $this );
-        //$this->view->set('fields', $this->formFields );
-
+    protected function renderTemplate()
+    {
         $_ENV['fields'] = $this->formFields;
-
-        $html = file_get_contents( $this->templateFileName );
+        $html = file_get_contents($this->templateFileName);
         //
         $pattern = "/\{(?P<part>[^\:]+)(\:(?P<name>[^\: \}]+))?(\:\"(?P<title>[^\"]+)\")?(?P<extra>[^\}]+)?\}/";
-        $html = preg_replace_callback($pattern, function($matches){
+        $html = preg_replace_callback($pattern, function ($matches) {
             $out = '';
-            $part  = !empty($matches['part'])  ? $matches['part']  : '';
-            $name  = !empty($matches['name'])  ? $matches['name']  : '';
+            $part = !empty($matches['part']) ? $matches['part'] : '';
+            $name = !empty($matches['name']) ? $matches['name'] : '';
             $title = !empty($matches['title']) ? $matches['title'] : '';
             $extra = !empty($matches['extra']) ? $matches['extra'] : '';
             //pr([$part,$name,$title,$extra]);
-
             // Fields
             $fields = $_ENV['fields'];
             //pr($fields);
             if (!empty($name) && isset($fields[$name])) {
                 $field = $fields[$name];
-
                 /**
                  * @var FormField $field
                  */
-                if ($part=='label') {
+                if ($part == 'label') {
                     $out .= $field->label($title, $extra);
-                } else if ($part=='field') {
+                } else if ($part == 'field') {
                     //pr([$part,$name,$title,$extra]);
                     $out .= $field->render($extra);
-                } else if ($part=='error') {
+                } else if ($part == 'error') {
                     $out .= $field->errors($extra);
                 }
             } else {
@@ -264,10 +273,44 @@ class Form {
             }
             return $out;
         }, $html);
-
         return $html;
-
     }
+
+    protected function renderTemplateBootstrap() {
+        $_ENV['fields'] = $this->formFields;
+        $html = file_get_contents($this->templateFileName);
+        //
+        $pattern = "/\{(?P<name>[^ ]+) (?P<extra>[^\}]+)?\}/";
+        $html = preg_replace_callback($pattern, function ($matches) {
+            $out = '';
+            //$part = !empty($matches['part']) ? $matches['part'] : '';
+            $name = !empty($matches['name']) ? $matches['name'] : '';
+            //$title = !empty($matches['title']) ? $matches['title'] : '';
+            $extra = !empty($matches['extra']) ? $matches['extra'] : '';
+            //pr([$name,$extra]);
+            //
+            $fields = $_ENV['fields'];
+            //
+            if (!empty($name) && isset($fields[$name])) {
+                $field = $fields[$name];
+                /**
+                 * @var FormField $field
+                 */
+
+            } else {
+                // Form
+                if ($part == 'formOpen') {
+                    $out .= $this->openTag($extra);
+                } else if ($part == 'formClose') {
+                    $out .= $this->closeTag();
+                }
+            }
+
+            return $out;
+        }, $html);
+        return $html;
+    }
+
 
     /**
      * @return string
@@ -275,7 +318,6 @@ class Form {
     public function renderDefault() {
         $out = '<style>td.error{color:red;font-size:0.9em}</style>';
         $out .= $this->openTag();
-        //$out .= $this->renderHiddenFields();
         $out .= '<table>';
 
         foreach($this->formFields as $field) {
@@ -400,5 +442,11 @@ class Form {
         $this->setTemplate($templateFileName);
         return $this;
     }
+
+    public function bootstrap($enabled) {
+        $this->isBootstrapEnabled = $enabled;
+        return $this;
+    }
+
 
 }

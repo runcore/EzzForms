@@ -27,7 +27,7 @@ abstract class FormFieldMulti extends FormField {
     public function __construct($id, Array $default = null, Array $options = null, $size=1) {
         parent::__construct($id, $default, null);
 
-        $this->options = $options;
+        $this->setOptions($options);
     }
 
     /**
@@ -38,18 +38,7 @@ abstract class FormFieldMulti extends FormField {
             $values = [$values];
         }
         // Remove fake ID from input values (ie those that are not in $options array)
-        $validIds = [];
-        foreach($this->options as $k=>$option) {
-            if (is_array($option)) {
-                foreach($option as $id => $subValue) {
-                    $validIds[] = $id;
-                }//foreach
-            } else {
-                $validIds[] = $k;
-            }
-        }//foreach
-        // get only valid IDs
-        $intersect = array_intersect($values, $validIds);
+        $intersect = array_intersect($values, $this->optionsAsSimpleArray );
 
         parent::setValue( $intersect );
     }

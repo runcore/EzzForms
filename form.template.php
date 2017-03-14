@@ -1,8 +1,3 @@
-<?php
-//use EzzForms as Ezz;
-// todo: this bad!! need change to simple way work with form and fields
-//$login = $fields['login'];
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,34 +17,38 @@
 <body>
 
 <div class="container">
-        {formOpen:exampleForm class="form-horizontal"}
 
-        <div class="form-group">
-            <div class="col-md-4">&nbsp;</div>
-            <div class="col-md-4"><h3><a href="./">EzzForm render demo</a></h3></div>
+    {formOpen:exampleForm class="form-horizontal"}
+
+    <div class="form-group">
+        <div class="col-md-offset-4 col-md-4"><h3><a href="./">EzzForms. Form template demo</a></h3></div>
+    </div>
+
+    <div class="form-group">
+        {label:login:"Логин" class="col-md-4 control-label"}
+        <div class="col-md-4">
+            {field:login class="form-control" placeholder="Login"}
+            {error:login class="text-danger small"}
         </div>
-        <div class="form-group">
-            {label:login:"Логин" class="col-md-4 control-label"}
-            <div class="col-md-4">
-                {field:login class="form-control" placeholder="Login"}
-                {error:login class="text-danger small"}
-            </div>
-        </div>
-        <div class="form-group"> <!-- has-error -->
+    </div>
+
+    <div class="form-group"> <!-- has-error -->
             {label:password:"Пароль" class="col-md-4 control-label"}
             <div class="col-md-4">
                 {field:password class="form-control" placeholder="пароль"}
                 {error:password class="text-danger small"}
             </div>
-        </div>
-        <div class="form-group">
-            {label:password2:"Пароль 2"  class="col-md-4 control-label"}
+    </div>
+
+    <div class="form-group">
+            {label:password2:"Пароль 2" class="col-md-4 control-label"}
             <div class="col-md-4">
                 {field:password2 class="form-control" placeholder="пароль"}
                 {error:password2 class="text-danger small"}
             </div>
-        </div>
-        <div class="form-group">
+    </div>
+
+    <div class="form-group">
             {label:towns:"Города" class="col-md-4 control-label"}
             <div class="col-md-4">
                 {field:towns class="form-control"}
@@ -74,7 +73,8 @@
                 </div>
             </div>
         </div>
-        <div class="form-group">
+
+    <div class="form-group">
             {label:text:"Текст комментария" class="col-md-4 control-label"}
             <div class="col-md-4">
                 {field:text class="form-control"}
