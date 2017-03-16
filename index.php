@@ -1,16 +1,20 @@
-﻿<?php
+<?php
+session_start();
 use EzzForms as Ezz;
+
 include('./EzzForms/autoexec.php');
 
 // Options
 $towns = ['Столицы'=>[123=>'Moskow','WA'=>'Washington']];
 
 // Form
-$form = Ezz\form('exampleForm')
-    ->action('./')
-    ->method('POST')
+$form = Ezz\form('exampleForm')->csrf(false)->action('./')->method('POST')
     ->fields([
-        Ezz\text('login')->def('%')->rules(['required minlen:3','regexp'=>['/^[\w]+$/i','Некорректный логин'] ])
+         Ezz\text('login')->def('runcore')->rules(['required minlen:3','regexp'=>['/^[\w]+$/i','Некорректный логин']
+             , 'uppercase'=>[function($value){return $value===mb_strtoupper($value);}
+             //,'Need upper case'
+            ]
+         ])
         ,Ezz\password('password')->rules('required minlen:8')
         ,Ezz\password('password2')->rules(['required','equalto'=>['password','Пароли несовпадают'] ])
         ,Ezz\select('towns')->def([14])->options($towns)->size(1)
@@ -22,7 +26,7 @@ $form = Ezz\form('exampleForm')
         ,Ezz\submit('submit1')
     ])
 //    ->bootstrap(true)->template('./form.bootstrap.php')
-    ->template('./form.template.php')
+    ->bootstrap(false)//->template('./form.template.php')
 ;
 
 // Processing ...
@@ -33,20 +37,4 @@ if ( $form->isSubmit() ) {
     }
 }
 
-$formHtml = $form->render();
-echo $formHtml;
-
-exit;
-
-// Form code
-$html = str_replace('><', ">\n<", Ezz\escape( $formHtml ) );
-Ezz\pr($html);
-
-// Form render
-echo '<hr />';
-echo '<a href="./">Home</a>';
-echo $formHtml;
-
-// Form object inside
-echo '<hr />';
-Ezz\pr($form);
+echo $form->render();

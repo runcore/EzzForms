@@ -98,13 +98,27 @@ class FieldValidatorServer {
             foreach($rules as $key=>$rule) {
                 if (is_numeric($key)) { // rule is string
                     $this->parseRules($rule);
-                } else { // rule is array cell
+                } else {
                     $key = trim($key);
+                    // rule is array cell
                     if ( is_array($rule) ) {
-                        if (sizeof($rule)==2) { // With custom error
-                            list($rule,$customError) = $rule;
-                            $this->rules[$key] = trim($rule);
-                            $this->customErrors[$key] = $customError;
+                        $ruleBody = null;
+                        if (sizeof($rule)) {
+                            $ruleBody = array_shift($rule);
+                            // Closure
+                            if ( is_object($ruleBody) && $ruleBody instanceof \Closure) {
+                                $this->rules[$key] = $ruleBody;
+                            } else {
+                                //String rule
+                                $this->rules[$key] = trim($ruleBody);
+                            }
+                        }
+                        // Custom error
+                        if (sizeof($rule)) {
+                            $customErrorText = array_shift($rule);
+                            if (!empty($customErrorText)) {
+                                $this->customErrors[$key] = $customErrorText;
+                            }
                         }
                     } else if (is_string($rule)) {
                         $this->rules[$key] = trim($rule);
@@ -139,31 +153,37 @@ class FieldValidatorServer {
      */
     public function validate($fieldName, $fieldValue, $fieldsValues) {
         $errors = [];
-        // validate keys of available rules
-        if (sizeof($this->rules)>0) {
-            $diff = array_diff( array_keys($this->rules), array_keys(self::$defaultRules) );
-            if ( count($diff)>0 ) { // exists unknown rules!
-                foreach($diff as $v) {
-                    throw new Exception('Unknown rules: '.strtoupper($v).' for '.strtoupper($fieldName), 1 );
-                }//foreach
-            }
-        }
 
         // validate!
         foreach($this->rules as $ruleName=>$rule ) {
             $methodName = 'validate_'.$ruleName;
+            // Custom rule
             if ( !method_exists($this,$methodName) ) {
-                throw new Exception('Unknown rule method : '.$methodName, 1 );
+                // custom callback rule ?
+                if (is_object($rule) && $rule instanceof \Closure) {
+                    $isValid = $rule( $fieldValue );
+                    if (!$isValid) {
+                        if (!empty($this->customErrors[$ruleName])) {
+                            // replace default error text to custom error text
+                            $errors[$ruleName] = $this->customErrors[$ruleName];
+                        } else {
+                            // standard error text
+                            $errors[$ruleName] = $ruleName.' error';
+                        }
+                    }
+                }
             }
-
-            $error = $this->$methodName( $fieldValue, $rule, $fieldsValues );
-            if (!empty($error)) {
-                if (!empty($this->customErrors[$ruleName])) {
-                    // replace default error text to custom error text
-                    $errors[$ruleName] = $this->customErrors[$ruleName];
-                } else {
-                    // standard error text
-                    $errors[$ruleName] = $error;
+            // One of standard rule
+            else {
+                $error = $this->$methodName($fieldValue, $rule, $fieldsValues);
+                if (!empty($error)) {
+                    if (!empty($this->customErrors[$ruleName])) {
+                        // replace default error text to custom error text
+                        $errors[$ruleName] = $this->customErrors[$ruleName];
+                    } else {
+                        // standard error text
+                        $errors[$ruleName] = $error;
+                    }
                 }
             }
         }//foreach

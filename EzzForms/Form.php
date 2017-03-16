@@ -127,16 +127,24 @@ class Form
             $methodName = strtolower($methodName);
             $this->formMethodName = in_array($methodName, ['get', 'post']) ? $methodName : 'post';
             $this->formMethod = $this->formMethodName == 'post' ? $_POST : $_GET;
+            // todo: may be need move this code to isSubmit() method ?
+
             // is submit form?
             $this->isFormSubmit = !empty($this->formMethod[$this->formId]['__ID__']);
+
+            // CSRF protection
+            if ( $this->isCsrfProtectionEnabled && session_status() != PHP_SESSION_ACTIVE ) {
+                throw new \Exception('CSRF protection uses sessions');
+            }
             if ($this->isFormSubmit && $this->isCsrfProtectionEnabled) {
+                $this->isFormSubmit = false;
                 if (!empty($_SESSION[$this->formTokenId])) {
-                    if ($_SESSION[$this->formTokenId] == $this->formMethod[$this->formId]['__ID__']) {
+                    if ( hash_equals($_SESSION[$this->formTokenId], $this->formMethod[$this->formId]['__ID__']) ) {
                         $this->isFormSubmit = true;
                     }
                     unset($_SESSION[$this->formTokenId]);
                 }
-            }
+            }//CSRF
         }
     }
 
@@ -435,6 +443,11 @@ class Form
 
     public function action($action) {
         $this->setAction($action);
+        return $this;
+    }
+
+    public function csrf($enabled) {
+        $this->isCsrfProtectionEnabled = $enabled;
         return $this;
     }
 
