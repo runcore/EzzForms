@@ -24,7 +24,7 @@
         <div class="col-md-offset-4 col-md-4"><h3><a href="./formLogin.php">Ezz\Forms. Login form example</a></h3></div>
     </div>
 
-    <div class="form-group">
+    <div class="form-group {has-error:login has-error}">
         {label:login:"Логин" class="col-md-4 control-label"}
         <div class="col-md-4">
             {field:login class="form-control" placeholder="Login"}
@@ -32,7 +32,7 @@
         </div>
     </div>
 
-    <div class="form-group"> <!-- has-error -->
+    <div class="form-group {has-error:password has-error}">
             {label:password:"Пароль" class="col-md-4 control-label"}
             <div class="col-md-4">
                 {field:password class="form-control" placeholder="пароль"}

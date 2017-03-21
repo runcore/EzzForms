@@ -277,6 +277,11 @@ class Form
                     $out .= $field->render($extra);
                 } else if ($part == 'error') {
                     $out .= $field->errors($extra);
+                } else if ($part == 'has-error') {
+                    $errors = $field->getValidationErrors();
+                    if (sizeof($errors)) {
+                        $out .= $extra;
+                    }
                 }
             } else {
                 // Form
