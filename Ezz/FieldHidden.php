@@ -1,9 +1,9 @@
 <?php
-namespace EzzForms;
+namespace Ezz;
 
 /**
  * Class FieldHidden
- * @package EzzForms
+ * @package Ezz
  */
 class FieldHidden extends FormField {
 

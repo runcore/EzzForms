@@ -1,25 +1,27 @@
 <?php
 /**
- * Light and powerful forms for embedding
+ * Forms for easy embedding
  *
- * features:
- *  CSRF protection
- *  Default values for fields
- *  Validation of values
- *  Custom validation error texts
- *
- * @package EzzForms
+ * @package Ezz
  * @created 01.01.2017
  * @author runcore
  */
-namespace EzzForms;
+namespace Ezz;
 
+// todo: support for composer
 // todo: server, custom template engine
-// todo: client, support for jquery
 // todo: server, support ajax-request validation
-// todo: client, support for bootstrap 3
-// todo: client, support for angular
 // todo: client, support for client validation
+
+session_start();
+
+// system dirs
+define('DIR_EZZ', dirname(__FILE__) . DIRECTORY_SEPARATOR );
+// autoload settings
+ini_set('include_path',
+    DIR_EZZ .PATH_SEPARATOR .'..' .DIRECTORY_SEPARATOR
+	.ini_get('include_path')
+);
 
 spl_autoload_register(function ($class) {
     $class = str_replace('_',DIRECTORY_SEPARATOR, $class);
@@ -73,6 +75,8 @@ function hidden($name) {
 function submit($name,$label='') {
     return new FieldSubmit($name,$label);
 }
+
+//
 
 /**
  * @param $a

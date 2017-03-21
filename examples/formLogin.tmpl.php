@@ -6,7 +6,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <link rel="icon" href="./favicon.ico">
-    <title>EzzForms demo</title>
+    <title>Form login example</title>
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <!-- Optional theme -->
@@ -21,7 +21,7 @@
     {formOpen:exampleForm class="form-horizontal"}
 
     <div class="form-group">
-        <div class="col-md-offset-4 col-md-4"><h3><a href="./">EzzForms. Form template demo</a></h3></div>
+        <div class="col-md-offset-4 col-md-4"><h3><a href="./formLogin.php">Ezz\Forms. Login form example</a></h3></div>
     </div>
 
     <div class="form-group">
@@ -41,51 +41,19 @@
     </div>
 
     <div class="form-group">
-            {label:password2:"Пароль 2" class="col-md-4 control-label"}
-            <div class="col-md-4">
-                {field:password2 class="form-control" placeholder="пароль"}
-                {error:password2 class="text-danger small"}
+        <div class="col-md-offset-4 col-md-4">
+            <div class="checkbox">
+                {field:rememberMe}
+                {error:rememberMe class="text-danger small"}
             </div>
+        </div>
     </div>
-
-    <div class="form-group">
-            {label:towns:"Города" class="col-md-4 control-label"}
-            <div class="col-md-4">
-                {field:towns class="form-control"}
-                {error:towns class="text-danger small"}
-            </div>
-        </div>
-        <div class="form-group">
-            {label:towns2:"Города" class="col-md-4 control-label"}
-            <div class="col-md-4">
-                <div class="checkbox">
-                    {field:towns2}
-                    {error:towns2 class="text-danger small"}
-                </div>
-            </div>
-        </div>
-        <div class="form-group">
-            {label:towns3:"Города" class="col-md-4 control-label"}
-            <div class="col-md-4">
-                <div class="radio">
-                    {field:towns3}
-                    {error:towns3 class="text-danger small"}
-                </div>
-            </div>
-        </div>
-
-    <div class="form-group">
-            {label:text:"Текст комментария" class="col-md-4 control-label"}
-            <div class="col-md-4">
-                {field:text class="form-control"}
-                {error:text class="text-danger small"}
-            </div>
-        </div>
 
         <div class="form-group">
             <div class="col-md-offset-4 col-md-4">
-                {field:submit1 value="Отправить" class="btn btn-default"}
+                {field:submitLogin value="Отправить" class="btn btn-default"}
             </div>
+
         </div>
 
     {formClose}

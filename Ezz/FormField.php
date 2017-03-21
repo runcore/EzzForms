@@ -1,9 +1,9 @@
 <?php
-namespace EzzForms;
+namespace Ezz;
 
 /**
  * Class FormField
- * @package EzzForms
+ * @package Ezz
  */
 abstract class FormField {
 

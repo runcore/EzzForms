@@ -1,9 +1,9 @@
 <?php
-namespace EzzForms;
+namespace Ezz;
 
 /**
  * Class FieldValidator
- * @package EzzForms
+ * @package Ezz
  */
 class FieldValidatorServer {
 

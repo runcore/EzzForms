@@ -1,5 +1,5 @@
 
-# EzzForms
+# Ezz\Forms
 Forms for easy embedding
 
 Example:

@@ -1,11 +1,11 @@
 <?php
-namespace EzzForms;
+namespace Ezz;
 
 /**
- * Class FieldRadio
- * @package EzzForms
+ * Class FieldCheckbox
+ * @package Ezz
  */
-class FieldRadio extends FormFieldMulti {
+class FieldCheckbox extends FormFieldMulti {
     /**
      * @param $id
      * @param $value
@@ -13,6 +13,6 @@ class FieldRadio extends FormFieldMulti {
      * @return string
      */
     protected function renderOption($id, $value, $extra) {
-        return parent::_renderOption($id, $value, $extra, 'radio');
+        return parent::_renderOption($id, $value, $extra, 'checkbox');
     }
 }

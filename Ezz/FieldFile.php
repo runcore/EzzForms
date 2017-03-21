@@ -1,9 +1,9 @@
 <?php
-namespace EzzForms;
+namespace Ezz;
 
 /**
  * Class FieldFile
- * @package EzzForms
+ * @package Ezz
  */
 class FieldFile extends FormField {
 
@@ -31,9 +31,9 @@ class FieldFile extends FormField {
      * @param $text
      * @return string
      */
-    public function label($text) {
-        return '';
-    }
+    //public function label($text, $extra='') {
+        //return '';
+    //}
 
     /**
      * @param string $extra

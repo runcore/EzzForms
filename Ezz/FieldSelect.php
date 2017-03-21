@@ -1,9 +1,9 @@
 <?php
-namespace EzzForms;
+namespace Ezz;
 
 /**
  * Class FieldSelect
- * @package EzzForms
+ * @package Ezz
  */
 class FieldSelect extends FormField {
 

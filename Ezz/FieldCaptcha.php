@@ -1,5 +1,5 @@
 <?php
-namespace EzzForms;
+namespace Ezz;
 
 class FieldCaptcha {
 

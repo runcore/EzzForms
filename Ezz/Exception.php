@@ -1,9 +1,9 @@
 <?php
-namespace EzzForms;
+namespace Ezz;
 
 /**
  * Class Exception
- * @package EzzForms
+ * @package Ezz
  */
 class Exception extends \Exception {
 

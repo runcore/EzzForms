@@ -1,9 +1,9 @@
 <?php
-namespace EzzForms;
+namespace Ezz;
 
 /**
  * Class Form
- * @package EzzForms
+ * @package Ezz
  */
 class Form
 {
@@ -89,7 +89,7 @@ class Form
     /**
      * @var bool
      */
-    protected $isBootstrapEnabled = false;
+//    protected $isBootstrapEnabled = false;
 
 
     /**
@@ -139,7 +139,14 @@ class Form
             if ($this->isFormSubmit && $this->isCsrfProtectionEnabled) {
                 $this->isFormSubmit = false;
                 if (!empty($_SESSION[$this->formTokenId])) {
-                    if ( hash_equals($_SESSION[$this->formTokenId], $this->formMethod[$this->formId]['__ID__']) ) {
+                    $isTokenValid = false;
+                    if ( function_exists('hash_equals') ) {
+                        // support for php version < 5.6
+                        $isTokenValid = hash_equals($_SESSION[$this->formTokenId], $this->formMethod[$this->formId]['__ID__']);
+                    } else {
+                        $isTokenValid = $_SESSION[$this->formTokenId] == $this->formMethod[$this->formId]['__ID__'];
+                    }
+                    if ( $isTokenValid ) {
                         $this->isFormSubmit = true;
                     }
                     unset($_SESSION[$this->formTokenId]);
@@ -164,7 +171,7 @@ class Form
      * @param array|FormField $params
      * @throws \Exception
      */
-    public function add($params)
+    protected function add($params)
     {
         if (is_array($params)) {
             foreach ($params as $field) {
@@ -230,13 +237,13 @@ class Form
     public function render()
     {
         if (!empty($this->templateFileName) && is_file($this->templateFileName)) {
-            if ($this->isBootstrapEnabled) {
-                return $this->renderTemplateBootstrap();
-            } else {
+//            if ($this->isBootstrapEnabled) {
+//                return $this->renderTemplateBootstrap();
+//            } else {
                 return $this->renderTemplate();
-            }
+//            }
         }
-        return $this->renderDefault();
+        return $this->renderDefault(); // just example form
     }
 
     /**
@@ -284,7 +291,8 @@ class Form
         return $html;
     }
 
-    protected function renderTemplateBootstrap() {
+/*
+     protected function renderTemplateBootstrap() {
         $_ENV['fields'] = $this->formFields;
         $html = file_get_contents($this->templateFileName);
         //
@@ -301,9 +309,6 @@ class Form
             //
             if (!empty($name) && isset($fields[$name])) {
                 $field = $fields[$name];
-                /**
-                 * @var FormField $field
-                 */
 
             } else {
                 // Form
@@ -318,7 +323,7 @@ class Form
         }, $html);
         return $html;
     }
-
+*/
 
     /**
      * @return string
@@ -456,10 +461,9 @@ class Form
         return $this;
     }
 
-    public function bootstrap($enabled) {
-        $this->isBootstrapEnabled = $enabled;
-        return $this;
-    }
-
+//    public function bootstrap($enabled) {
+//        $this->isBootstrapEnabled = $enabled;
+//        return $this;
+//    }
 
 }

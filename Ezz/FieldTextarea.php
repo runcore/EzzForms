@@ -1,9 +1,9 @@
 <?php
-namespace EzzForms;
+namespace Ezz;
 
 /**
  * Class FieldTextarea
- * @package EzzForms
+ * @package Ezz
  */
 class FieldTextarea extends FormField {
     public function render($extra='') {
