@@ -133,7 +133,7 @@ abstract class FormField {
      */
     public function validate( Array $fieldsValues ) {
         if ( is_object( $this->fieldValidator ) ) {
-            $this->validationErrors = $this->fieldValidator->validate($this->getName(), $this->getValue(), $fieldsValues);
+            $this->validationErrors = $this->fieldValidator->validate($this->getValue(), $fieldsValues);
         }
         return $this->validationErrors;
     }

@@ -7,11 +7,13 @@ namespace Ezz;
  */
 class FieldValidatorServer {
 
-    const RULE_NAME_REQUIRED = 'required';
-    const RULE_NAME_MINLEN   = 'minlen';
-    const RULE_NAME_MAXLEN   = 'maxlen';
-    const RULE_NAME_MIN      = 'min';
-    const RULE_NAME_MAX      = 'max';
+    const RULE_NAME_REQUIRED = 'required';  // required
+    const RULE_NAME_MINLEN   = 'minlen';   // min-len:8
+    const RULE_NAME_MAXLEN   = 'maxlen';   // max-len:100
+    const RULE_NAME_RANGELEN = 'rangelen'; // range-len:8,100
+    const RULE_NAME_MIN      = 'min';       // min:0.001
+    const RULE_NAME_MAX      = 'max';       // max:0.009000
+    const RULE_NAME_RANGE    = 'range';     // range:1,1000
     const RULE_NAME_REGEXP   = 'regexp';
     const RULE_NAME_INT      = 'int';
     const RULE_NAME_FLOAT    = 'float';
@@ -26,6 +28,9 @@ class FieldValidatorServer {
     const RULE_NAME_TIMEDATE = 'timedate';
     const RULE_NAME_EQUALTO  = 'equalto';
 
+    const SEPARATOR_RANGE = ',';
+    const SEPARATOR_VALUE = ':';
+
     /**
      * @var array
      */
@@ -33,8 +38,10 @@ class FieldValidatorServer {
         self::RULE_NAME_REQUIRED  => 'Обязательное поле'
         ,self::RULE_NAME_MINLEN   => 'Длина поля от %d символов'
         ,self::RULE_NAME_MAXLEN   => 'Длина поля до %d символов'
+        ,self::RULE_NAME_RANGELEN => 'Длина поля в диапазоне %d-%d символов'
         ,self::RULE_NAME_MIN      => 'Минимальное значение поля %s'
         ,self::RULE_NAME_MAX      => 'Максимальное значение поля %s'
+        ,self::RULE_NAME_RANGE    => 'Значение поля в диапазоне %s,%s'
         ,self::RULE_NAME_REGEXP   => 'Некорректный формат поля'
         ,self::RULE_NAME_INT      => 'Ожидается целое число'
         ,self::RULE_NAME_FLOAT    => 'Ожидается дробное число'
@@ -43,20 +50,21 @@ class FieldValidatorServer {
         ,self::RULE_NAME_IPV6     => 'Ожидается корректный IPv6 адрес'
         ,self::RULE_NAME_URL      => 'Ожидается корректный URL адрес'
         ,self::RULE_NAME_EMAIL    => 'Ожидается корректный Email адрес'
-        ,self::RULE_NAME_TIME     => 'Ожидается время в формате HH:MI:SS'
+        ,self::RULE_NAME_TIME     => 'Ожидается время в формате HH:MI'
         ,self::RULE_NAME_DATE     => 'Ожидается корректная дата в формате DD.MM.YYYY'
-        ,self::RULE_NAME_DATETIME => 'Ожидается корректная дата в формате DD.MM.YYYY HH:MI:SS'
-        ,self::RULE_NAME_TIMEDATE => 'Ожидается корректная дата в формате HH:MI:SS DD.MM.YYYY'
+        ,self::RULE_NAME_DATETIME => 'Ожидается корректная дата в формате DD.MM.YYYY HH:MI'
+        ,self::RULE_NAME_TIMEDATE => 'Ожидается корректная дата в формате HH:MI DD.MM.YYYY'
         ,self::RULE_NAME_EQUALTO  => 'Значение отличается от поля %s'
     ];
 
+    // Complete regexps
     const ERROR_DATE_INVALID = 'Несуществующая дата';
-
-    const REGEXP_DECIMAL  = "/^\\d+(\\.\\d{1,2})$/";
-    const REGEXP_TIME     = "/^([0-1]\\d|2[0-3])(:[0-5]\\d){2}$/";
+    const REGEXP_DECIMAL  = "/^\\-?\\d+(\\.\\d{1,2})$/";
+    const REGEXP_FLOAT_RANGE = "/^\\-?\\d+(\\.\\d+)?,\\-?\\d+(\\.\\d+)?$/";
+    const REGEXP_TIME     = "/^([0-1]\\d|2[0-3])(:[0-5]\\d)$/";
     const REGEXP_DATE     = "/^(?:(0[1-9]|[1-2]\\d|3[01])\\.(0[13-9]|1[012])|(0[1-9]|[1-2]\\d)\\.(02|1[0-2]))\\.((?:19|20)\\d\\d)$/";
-    const REGEXP_DATETIME = "/^(?:(0[1-9]|[1-2]\\d|3[01])\\.(0[13-9]|1[012])|(0[1-9]|[1-2]\\d)\\.(02|1[0-2]))\\.((?:19|20)\\d\\d) ([0-1]\\d|2[0-3])(:[0-5]\\d){2}$/";
-    const REGEXP_TIMEDATE = "/^([0-1]\\d|2[0-3])(:[0-5]\\d){2} (?:(0[1-9]|[1-2]\\d|3[01])\\.(0[13-9]|1[012])|(0[1-9]|[1-2]\\d)\\.(02|1[0-2]))\\.((?:19|20)\\d\\d)$/";
+    const REGEXP_DATETIME = "/^(?:(0[1-9]|[1-2]\\d|3[01])\\.(0[13-9]|1[012])|(0[1-9]|[1-2]\\d)\\.(02|1[0-2]))\\.((?:19|20)\\d\\d) ([0-1]\\d|2[0-3])(:[0-5]\\d)$/";
+    const REGEXP_TIMEDATE = "/^([0-1]\\d|2[0-3])(:[0-5]\\d) (?:(0[1-9]|[1-2]\\d|3[01])\\.(0[13-9]|1[012])|(0[1-9]|[1-2]\\d)\\.(02|1[0-2]))\\.((?:19|20)\\d\\d)$/";
 
     /**
      * Field validation rules
@@ -132,12 +140,17 @@ class FieldValidatorServer {
                 if (empty($rule)) {
                     continue;
                 }
-                if ( $rule!='' && strpos($rule,':')===false ) { // w/o value
+                if ( $rule!='' && strpos($rule,self::SEPARATOR_VALUE)===false ) { // w/o value
                     $this->rules[$rule] = true;
                 } else {
-                    list($ruleName, $ruleVal) = explode(':', $rule,2);
+                    list($ruleName, $ruleVal) = explode(self::SEPARATOR_VALUE, $rule,2);
                     if ( !empty($ruleName) && !empty($ruleVal) ) {
-                        $this->rules[trim($ruleName)] = trim($ruleVal);
+                        // range?
+                        if (preg_match(self::REGEXP_FLOAT_RANGE, $ruleVal)) {
+                            $this->rules[trim($ruleName)] = explode(self::SEPARATOR_RANGE,$ruleVal);
+                        } else {
+                            $this->rules[trim($ruleName)] = trim($ruleVal);
+                        }
                     }
                 }
             }//foreach
@@ -145,13 +158,12 @@ class FieldValidatorServer {
     }
 
     /**
-     * @param $fieldName
      * @param $fieldValue
      * @param $fieldsValues
      * @return array
      * @throws Exception
      */
-    public function validate($fieldName, $fieldValue, $fieldsValues) {
+    public function validate($fieldValue, $fieldsValues) {
         $errors = [];
 
         // validate!
@@ -210,7 +222,7 @@ class FieldValidatorServer {
     protected function validate_minlen( $value, $rule ) {
         $minlen = intval($rule);
         $fieldLen = mb_strlen( $value );
-        if ( $minlen>0 && $fieldLen<$minlen ) {
+        if ( $minlen>=0 && $fieldLen<$minlen ) {
             return sprintf(self::$defaultRules[ self::RULE_NAME_MINLEN ], $minlen);
         }
         return null;
@@ -224,8 +236,22 @@ class FieldValidatorServer {
     protected function validate_maxlen( $value, $rule ) {
         $maxlen = intval($rule);
         $fieldLen = mb_strlen( $value );
-        if ( $maxlen>0 && $fieldLen>$maxlen ) {
+        if ( $maxlen>=0 && $fieldLen>$maxlen ) {
             return sprintf(self::$defaultRules[ self::RULE_NAME_MAXLEN ], $maxlen);
+        }
+        return null;
+    }
+
+    /**
+     * @param $value
+     * @param $rule
+     * @return null|string
+     */
+    protected function validate_rangelen( $value, $rule ) {
+        list($rangeMin,$rangeMax) = $rule;
+        $fieldLen = mb_strlen( $value );
+        if ( $fieldLen<$rangeMin || $fieldLen>$rangeMax ) {
+            return sprintf(self::$defaultRules[ self::RULE_NAME_RANGELEN ], $rangeMin,$rangeMax);
         }
         return null;
     }
@@ -236,9 +262,9 @@ class FieldValidatorServer {
      * @return string
      */
     protected function validate_min( $value, $rule ) {
-        $minVal   = intval($rule);
-        $fieldVal = intval($value);
-        if ( $minVal>0 && $fieldVal<$minVal ) {
+        $minVal   = floatval($rule);
+        $fieldVal = floatval($value);
+        if ( $fieldVal<$minVal ) {
             return sprintf(self::$defaultRules[ self::RULE_NAME_MIN ], $minVal);
         }
         return null;
@@ -250,10 +276,24 @@ class FieldValidatorServer {
      * @return string
      */
     protected function validate_max( $value, $rule ) {
-        $maxVal = intval($rule);
-        $value  = intval($value);
-        if ( $maxVal>0 && $value>$maxVal ) {
+        $maxVal = floatval($rule);
+        $value  = floatval($value);
+        if ( $value>$maxVal ) {
             return sprintf(self::$defaultRules[ self::RULE_NAME_MAX ], $maxVal);
+        }
+        return null;
+    }
+
+    /**
+     * @param $value
+     * @param $rule
+     * @return null|string
+     */
+    protected function validate_range( $value, $rule ) {
+        list($rangeMin,$rangeMax) = $rule;
+        $fieldVal = floatval($value);
+        if ( $fieldVal<$rangeMin || $fieldVal>$rangeMax ) {
+            return sprintf(self::$defaultRules[ self::RULE_NAME_RANGE ], $rangeMin, $rangeMax );
         }
         return null;
     }

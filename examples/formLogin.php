@@ -1,8 +1,5 @@
 <?php
-
 include('../Ezz/autoexec.php');
-
-//header('Content-Type: text/html; charset=utf8');
 
 // Form
 $form = Ezz\form('formLogin')->action('./formLogin.php')->method('POST')

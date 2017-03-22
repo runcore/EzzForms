@@ -10,13 +10,13 @@ $form = Ezz\form('exampleForm')
     ->action('./formFull.php')
     ->method('POST')
     ->fields([
-        Ezz\text('login')->def('runcore')->rules(['required minlen:3 maxlen:30','regexp'=>['/^[\w]+$/i','Некорректный логин']
+        Ezz\text('login')->def('runcore')->rules(['required rangelen:3,30','regexp'=>['/^[\w]+$/i','Некорректный логин']
             // Example of custom rule
              , 'uppercase'=>[function($value){return $value===mb_strtoupper($value);}
              ,'Need upper case' // custom error message
             ]
         ])
-        ,Ezz\text('age')->rules('required integer min:18 max:99')
+        ,Ezz\text('age')->rules('required float range:-1,10.09 min:-1 max:10.09')
         ,Ezz\password('password')->rules('required minlen:8')
         ,Ezz\password('password2')->rules(['required','equalto'=>['password','Пароли несовпадают'] ])
         ,Ezz\select('towns')->def([14])->options($options)->size(1)
